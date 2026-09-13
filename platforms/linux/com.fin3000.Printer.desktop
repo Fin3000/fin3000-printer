@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Fin3000 Printer
+Comment=Send a confirmed PDF print copy to your Fin3000 account
+Comment[de]=Eine bestätigte PDF-Druckkopie an dein Fin3000-Konto senden
+Exec=/usr/bin/fin3000-printer
+Icon=printer
+Terminal=false
+Categories=Office;Finance;
+StartupNotify=true
+DBusActivatable=false

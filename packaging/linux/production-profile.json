@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "environment": "production",
+  "apiOrigin": "https://api.fin3000.com",
+  "appOrigin": "https://app.fin3000.com",
+  "clientId": "fin3000-system-print",
+  "audience": "fin3000-printer:production",
+  "quarantineOrigins": ["https://fsn1.your-objectstorage.com"],
+  "receiptKeys": {
+    "fin3000-system-print-20260910-01": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAvy3Z9ygUsFvKBJxw4yS69+WPitobEmBVW0zj0jAzlBQ=\n-----END PUBLIC KEY-----\n"
+  },
+  "minimumBackendCommit": "c4a1f802eccab3f5b8ae559dec3ac90c73749012",
+  "minimumBackendVersion": "0.19.0"
+}

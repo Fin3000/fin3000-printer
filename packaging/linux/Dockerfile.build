@@ -1,0 +1,7 @@
+# Disposable build dependencies only. Never the installed client runtime.
+FROM ubuntu@sha256:33ceb71981b602c1a7443a53469e4dba065f7503eab3078a2d7a57a2ab987517
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    gcc libc6-dev libcups2-dev libjson-c-dev libssl-dev python3 dpkg-dev && \
+    dpkg-query -W -f='${Package}\t${Version}\n' > /build-toolchain.tsv
+# All product compilation runs later with --network none and no capabilities.
+WORKDIR /build
