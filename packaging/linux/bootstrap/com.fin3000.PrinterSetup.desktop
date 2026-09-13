@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Fin3000 Printer Setup
+Name[de]=Fin3000-Drucker installieren
+Comment=Install the printer from the Fin3000 APT source
+Comment[de]=Drucker aus der Fin3000-Paketquelle installieren
+Exec=/usr/bin/gjs -m /usr/lib/fin3000-printer-setup/app.js
+Icon=printer
+Terminal=false
+Categories=Office;Settings;
+StartupNotify=true
+DBusActivatable=false

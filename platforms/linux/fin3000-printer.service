@@ -1,0 +1,23 @@
+[Unit]
+Description=Fin3000 Printer desktop confirmation and status
+PartOf=graphical-session.target
+# GNOME publishes WAYLAND_DISPLAY only after its shell is ready. The generic
+# pre-session target alone races GTK startup on the supported Ubuntu desktop.
+After=graphical-session-pre.target gnome-session-initialized.target
+# A deterministic GTK startup failure must not restart every five seconds
+# forever. A parked service accepts no jobs and leaves recovery records intact.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/fin3000-printer --background
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+KillMode=control-group
+LimitCORE=0
+UMask=0077
+
+[Install]
+WantedBy=graphical-session.target

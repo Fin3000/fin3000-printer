@@ -1,0 +1,35 @@
+{
+  "name": "fin3000-printer",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Send confirmed PDF print copies to Fin3000.com from Linux applications",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "check:core": "tsc --noEmit",
+    "test:core": "node --test tests/core/*.test.mjs",
+    "test:linux-ingress": "python3 -B -I -m unittest discover -s tests -p test_linux_ingress.py",
+    "test:linux-setup": "python3 -B -I -m unittest discover -s tests -p test_linux_setup.py",
+    "test:linux-backend": "python3 -B -I -m unittest discover -s tests -p test_linux_backend.py",
+    "test:linux-ui": "python3 -B -I -m unittest discover -s tests -p test_linux_ui.py",
+    "test": "node --test tests/preflight.test.mjs tests/linux-cups-probe.test.mjs tests/linux-secret-probe.test.mjs tests/linux-auth-probe.test.mjs tests/linux-firefox-probe.test.mjs tests/firefox-probe-driver.test.mjs",
+    "test:workspace": "node --test tests/workspace-tools.test.mjs",
+    "test:native": "python3 -B -I -m unittest discover -s tests -p 'test_linux_native_probe.py'",
+    "test:vm": "python3 -B -I -m unittest discover -s tests -p 'test_linux_vm_probe.py'",
+    "test:release": "python3 -B -I -m unittest discover -s tests -p 'test_linux_release.py'",
+    "probe:native:check": "python3 -I scripts/linux-native-probe.py --check",
+    "probe:firefox": "node scripts/linux-firefox-probe.mjs --run-synthetic",
+    "preflight": "node scripts/preflight.mjs",
+    "probe:linux": "node scripts/linux-cups-probe.mjs --run-synthetic",
+    "probe:secrets": "node scripts/linux-secret-probe.mjs --run-synthetic",
+    "probe:auth": "node scripts/linux-auth-probe.mjs --run-synthetic --ubuntu=24.04",
+    "probe:auth:26": "node scripts/linux-auth-probe.mjs --run-synthetic --ubuntu=26.04"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.15",
+    "typescript": "5.9.3"
+  }
+}

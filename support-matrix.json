@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 2,
+  "repository": "tools/fin3000-printer",
+  "stage": "g0-prerequisites",
+  "activeMilestone": 1,
+  "platforms": [
+    {
+      "id": "windows",
+      "firstMilestone": 2,
+      "runtimePlatform": "win32",
+      "operatingSystems": ["Windows 11 24H2", "Windows 11 25H2"],
+      "architectures": ["x64", "arm64"],
+      "tools": ["cl.exe", "MSBuild.exe", "MakeAppx.exe", "SignTool.exe"],
+      "gate": "G0-W",
+      "deliveryEvidence": ["windows-publisher-and-trust"],
+      "requiredEvidence": ["signed-qa-msix-install", "oxps-to-pdf", "edge-pdf-passthrough", "no-save-as", "ui-coordinator-lifetime", "wpp-enabled-and-disabled", "foreign-sid-isolation"]
+    },
+    {
+      "id": "macos",
+      "firstMilestone": 3,
+      "runtimePlatform": "darwin",
+      "operatingSystems": ["macOS 15", "macOS 26"],
+      "architectures": ["x64", "arm64"],
+      "tools": ["xcodebuild", "xcrun", "codesign", "pkgbuild", "productbuild"],
+      "gate": "G0-M",
+      "deliveryEvidence": ["apple-team-and-notarization"],
+      "requiredEvidence": ["native-application-print", "pdf-contract", "authenticated-loopback-transport", "foreign-uid-isolation", "universal-binaries", "launchagent-keychain", "packaged-print-adapter"]
+    },
+    {
+      "id": "linux",
+      "firstMilestone": 1,
+      "runtimePlatform": "linux",
+      "operatingSystems": ["Ubuntu 24.04 LTS", "Ubuntu 26.04 LTS"],
+      "linuxDistribution": "ubuntu",
+      "linuxVersions": ["24.04", "26.04"],
+      "architectures": ["x64"],
+      "tools": ["gcc", "apparmor_parser", "lpadmin", "lpstat", "gjs", "python3", "setfacl", "systemctl", "dpkg-deb", "gpgv"],
+      "gate": "G0-L",
+      "deliveryEvidence": ["linux-signing-trust"],
+      "requiredEvidence": ["gnome-wayland-firefox-snap", "pdf-contract", "authenticated-cups-unix-transport", "foreign-uid-isolation", "secret-service", "polkit-setup", "restart"]
+    }
+  ],
+  "deliveryGate": {
+    "id": "G0-D",
+    "requiredEvidence": ["release-native-os-cpu-test-hosts", "licenses-and-sbom"]
+  }
+}

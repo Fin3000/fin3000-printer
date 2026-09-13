@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN" "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Fin3000</vendor>
+  <vendor_url>https://fin3000.com/tools/</vendor_url>
+  <action id="com.fin3000.printer.setup">
+    <description>Configure your Fin3000 printer</description>
+    <description xml:lang="de">Deinen Fin3000-Drucker einrichten</description>
+    <message>Authentication is required to configure your private Fin3000 print queue.</message>
+    <message xml:lang="de">Die Einrichtung deiner privaten Fin3000-Druckerwarteschlange erfordert eine Bestätigung.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/fin3000-printer</annotate>
+    <annotate key="org.freedesktop.policykit.exec.argv1">--setup</annotate>
+  </action>
+</policyconfig>

@@ -1,0 +1,16 @@
+Fin3000 Printer
+Copyright 2026 the Fin3000 Printer contributors.
+
+The original source code and documentation in this repository are licensed
+under the Apache License, Version 2.0. See LICENSE for the license text.
+
+Third-party code, source archives and attribution included in this repository
+or its packages remain under their original licenses. See THIRD_PARTY_NOTICES.md
+and the original notices supplied with each component.
+
+This license applies to this independent desktop printer project. It does not
+license the separate Fin3000 backend, web application or Chrome extension.
+
+Fin3000 names and logos are not licensed for branding derivative products;
+the exceptions for attribution and describing origin in Apache-2.0 section 6
+remain applicable. This notice does not add restrictions to the Apache License.

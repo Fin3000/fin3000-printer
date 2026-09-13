@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN" "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Fin3000</vendor>
+  <vendor_url>https://fin3000.com/tools/</vendor_url>
+  <action id="com.fin3000.printer.install">
+    <description>Install the Fin3000 printer</description>
+    <description xml:lang="de">Fin3000-Drucker installieren</description>
+    <message>Install the Fin3000 printer and its required Ubuntu packages from authenticated package sources.</message>
+    <message xml:lang="de">Installiere den Fin3000-Drucker und benötigte Ubuntu-Pakete aus authentifizierten Paketquellen.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/fin3000-printer-setup/install.py</annotate>
+  </action>
+</policyconfig>

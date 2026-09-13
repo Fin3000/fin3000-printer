@@ -1,0 +1,13 @@
+Types: deb
+URIs: https://fin3000.com/tools/apt/
+Suites: stable
+Components: main
+Architectures: amd64
+Signed-By: /usr/share/keyrings/fin3000-printer-archive-keyring.gpg 6C1594AE8A48B7D7649BEDA7DA6206688A5862E3!
+Check-Valid-Until: yes
+Valid-Until-Max: 604800
+Check-Date: yes
+Date-Max-Future: 300
+InRelease-Path: InRelease
+By-Hash: force
+Enabled: yes

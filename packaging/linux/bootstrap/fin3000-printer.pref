@@ -1,0 +1,8 @@
+Explanation: Only our two packages may come from the Fin3000 archive.
+Package: fin3000-printer fin3000-printer-setup
+Pin: release o=Fin3000,l=Fin3000,a=stable,n=fin3000,c=main
+Pin-Priority: 500
+
+Package: *
+Pin: origin "fin3000.com"
+Pin-Priority: -1
