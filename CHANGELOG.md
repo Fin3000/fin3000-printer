@@ -6,6 +6,8 @@
   build and release-verification documentation.
 - Make default contributor checks independent of other Fin3000 checkouts.
   Add a local Firefox test driver and a separate source-verification workflow.
+- Install the GJS, CUPS and AppArmor validation prerequisites explicitly in
+  source CI and document them for contributors.
 - Preserve missing-driver and interruption errors in the native Firefox
   test probe instead of masking them as a session error.
 - Test the QA package's fixed name and prerelease version independently of

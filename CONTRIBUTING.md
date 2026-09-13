@@ -11,6 +11,12 @@ and Python 3.11 or newer. Native checks also use the operating system's GJS
 and GTK 4, libsecret, CUPS, AppArmor and build tools. The core process tests
 expect the Ubuntu GJS executable layout.
 
+The checks below need `gjs`, `cups-client` (including `cupstestppd`),
+`cups-core-drivers` (including the `gziptoany` filter), `apparmor` (including
+its offline profile parser), `gnupg`, `openssl`, `git` and `python3` from
+Ubuntu's packages. The source CI installs these native prerequisites
+explicitly; it does not require a running CUPS service or an existing printer.
+
 From the repository root, install the pinned development dependencies and run
 the relevant checks:
 

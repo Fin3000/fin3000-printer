@@ -18,10 +18,10 @@ jobs:
           cache: npm
       - name: Install pinned development dependencies
         run: npm ci --ignore-scripts
-      - name: Install native process-test prerequisite
+      - name: Install process and package-test prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends gjs
+          sudo apt-get install --yes --no-install-recommends gjs cups-client cups-core-drivers apparmor gnupg openssl
       - name: Typecheck and isolated tooling checks
         run: |
           npm run check:core
