@@ -1,0 +1,12 @@
+{
+  "name": "@fin3000/fin3000-printer-project-page",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tailwindcss --input input.css --output ../assets/site.css --minify",
+    "check": "node --input-type=module -e \"import {execFileSync} from 'node:child_process'; import {readFileSync} from 'node:fs'; const css = execFileSync('node_modules/.bin/tailwindcss', ['--input', 'input.css', '--minify'], {encoding: 'utf8'}); if (css.trimEnd() !== readFileSync('../assets/site.css', 'utf8').trimEnd()) throw Error('Run npm run build and commit the updated stylesheet.');\""
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.2.2"
+  }
+}

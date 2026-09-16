@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Add a German project page with Fin3000 branding, product-specific search
+  metadata, installation guidance and links to Fin3000.com. Include a
+  self-contained Tailwind documentation build and branded README navigation.
+
 - Publish the Linux printer source under Apache-2.0, with user, contributor,
   build and release-verification documentation.
 - Make default contributor checks independent of other Fin3000 checkouts.

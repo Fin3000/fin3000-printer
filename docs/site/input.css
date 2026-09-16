@@ -1,0 +1,27 @@
+@import "tailwindcss" source(none);
+@source "../index.html";
+
+/* Fin3000 Luminous Ledger tokens; this documentation build is self-contained. */
+@theme {
+  --color-paper: #fcf9f8;
+  --color-panel: #f6f3f2;
+  --color-ink: #1c1b1b;
+  --color-muted: #564f60;
+  --color-brand: #603ebc;
+  --color-brand-dark: #452a8d;
+  --color-brand-soft: #e8ddff;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+@layer base {
+  html { color-scheme: light; scroll-padding-top: 2rem; }
+  body { @apply bg-paper font-sans text-ink antialiased; }
+  a, summary { @apply focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-brand; }
+  summary { @apply cursor-pointer; }
+  p { text-wrap: pretty; }
+}
+@layer components {
+  .action-primary { @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-brand px-6 py-3 text-center font-semibold text-white hover:bg-brand-dark; }
+  .action-secondary { @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-brand-soft px-6 py-3 text-center font-semibold text-brand-dark hover:underline; }
+  .text-link { @apply inline-flex min-h-11 items-center gap-2 py-2 font-semibold text-brand underline decoration-brand/30 underline-offset-4 hover:decoration-brand; }
+  .eyebrow { @apply text-xs font-bold tracking-widest text-brand uppercase; }
+}
