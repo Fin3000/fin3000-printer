@@ -1,0 +1,15 @@
+Fin3000 logo and favicon: existing Fin3000 brand artwork.
+The Fin3000 trademark is not licensed under Apache-2.0.
+
+Platform logos identify the operating system or browser supported by this tool.
+They do not imply endorsement, sponsorship, or a partnership with Fin3000.
+Assets are self-hosted and retained without changes to their artwork.
+
+linux.svg
+Source: https://github.com/simple-icons/simple-icons
+Revision: 4ba19240849175ab4b855a732ab98c0f87cfb714
+Path: icons/linux.svg
+Simple Icons license: CC0-1.0
+https://creativecommons.org/publicdomain/zero/1.0/
+Tux was created by Larry Ewing. Linux is a trademark of Linus Torvalds.
+CC0 does not grant trademark rights.

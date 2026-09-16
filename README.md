@@ -1,4 +1,14 @@
+<p>
+  <a href="https://fin3000.com/">
+    <img src="docs/assets/favicon.svg" width="64" height="64" alt="Fin3000 – zur Website">
+  </a>
+</p>
+
 # Fin3000 Drucker
+
+[Fin3000.com](https://fin3000.com/)
+· [Tools & Downloads](https://fin3000.com/tools/)
+· [Project page](https://fin3000.github.io/fin3000-printer/)
 
 Send a PDF print copy to your Fin3000 invoice inbox from an application's print
 dialog. Fin3000 Drucker adds **An Fin3000 senden (Cloud-Upload)** as a print
