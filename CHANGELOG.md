@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Keep the generated Debian package description and installed README aligned
+  with the single-action automatic upload flow.
+
 ## [0.1.1] - 2026-09-30
 
 - Upload a print copy automatically after the operating system print action,

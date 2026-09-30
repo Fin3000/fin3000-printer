@@ -220,8 +220,8 @@ def stage(inputs):
     build.put(tree, f"usr/share/doc/{PACKAGE}/README", (
         "Fin3000 Drucker\n\n"
         "Open Fin3000 Drucker from the application menu to set up the printer and connect your account.\n"
-        "Print to An Fin3000 senden (Cloud-Upload), then confirm the upload in the app.\n"
-        "Only explicitly confirmed PDF print copies are sent to your Fin3000 invoice inbox.\n"
+        "Print to An Fin3000 senden (Cloud-Upload). The upload starts with the operating-system print action; there is no second send button.\n"
+        "Admitted PDF print copies are sent automatically to your Fin3000 invoice inbox.\n"
         "If receipt is unclear, check the operation status before printing again.\n"
         "Setup, updates, removal and help: https://fin3000.com/tools/fin3000-drucker/\n"
     ).encode())
@@ -232,9 +232,9 @@ def stage(inputs):
     control = (f"Package: {PACKAGE}\nVersion: {version}\nArchitecture: amd64\nPre-Depends: python3\n"
                "Maintainer: Fin3000 <mail@fin3000.com>\nSection: utils\nPriority: optional\n"
                f"Depends: {build.DEPENDENCIES}\n"
-               "Description: Send confirmed PDF print copies to Fin3000\n"
-               " Adds a system printer and an app for account connection, explicit upload\n"
-               " confirmation and receipt status in the Fin3000 invoice inbox.\n")
+               "Description: Send PDF print copies to Fin3000\n"
+               " Adds a system printer and an app for account connection, automatic upload\n"
+               " after the print action, and receipt status in the Fin3000 invoice inbox.\n")
     build.put(tree, "DEBIAN/control", control.encode())
     digests = {name: hashlib.sha256(raw).hexdigest() for name, raw in sources.items()}
     inventory = {"status": "UNRELEASED", "package": PACKAGE, "version": version, "buildProfile": "production",
