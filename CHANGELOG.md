@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-30
+
 - Upload a print copy automatically after the operating system print action,
   removing the redundant desktop confirmation. Persist admissions before
   transfer, serialize uploads, cap active work, and preserve explicit
