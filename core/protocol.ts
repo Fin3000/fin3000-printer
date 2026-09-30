@@ -19,7 +19,6 @@ export interface Binding {
   audience: 'fin3000-printer:production' | 'fin3000-printer:qa';
   clientId: string;
   subject: string;
-  accountName: string;
   target: { id: string | null; name: string };
 }
 
@@ -72,7 +71,6 @@ export function jobKey(identity: JobIdentity): string {
 
 export function validateBinding(binding: Binding): void {
   if (!CLIENT_IDS.has(binding.clientId) || typeof binding.issuer !== 'string' || !/^sp_[0-9a-f]{32}$/.test(binding.subject) ||
-      typeof binding.accountName !== 'string' || !binding.accountName || binding.accountName.length > 120 || /[\p{C}]/u.test(binding.accountName) ||
       (binding.target.id !== null && (typeof binding.target.id !== 'string' || !UUID_PATTERN.test(binding.target.id))) || typeof binding.target.name !== 'string' || !binding.target.name || binding.target.name.length > 120 || /[\p{C}]/u.test(binding.target.name) ||
       !['fin3000-printer:production', 'fin3000-printer:qa'].includes(binding.audience)) {
     throw new PrinterError('PRINCIPAL_INVALID');

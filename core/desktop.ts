@@ -1,14 +1,15 @@
 /** UI orchestration. Only Coordinator can admit, dispatch or settle a document. */
 import type { Coordinator } from './coordinator.ts';
 import type { Control } from './control-wire.ts';
+import type { DisplayedBinding } from './oauth.ts';
 import type { Binding, JobIdentity, JobRecord } from './protocol.ts';
 import { PrinterError } from './protocol.ts';
 import { AUTH_RECOVERY_ERRORS } from './retry.ts';
 import { recoveryExport } from './recovery-export.ts';
 
 interface AuthPort {
-  authorize(signal: AbortSignal): Promise<Binding>;
-  restore(signal: AbortSignal): Promise<Binding>;
+  authorize(signal: AbortSignal): Promise<DisplayedBinding>;
+  restore(signal: AbortSignal): Promise<DisplayedBinding>;
   disconnect(signal: AbortSignal): Promise<void>;
   lock(): void;
 }
@@ -36,6 +37,7 @@ export class DesktopController {
   private exportRecovery: (operationId: string, content: string) => void;
   private now: () => number;
   private binding: Binding | null = null;
+  private accountName: string | null = null;
   private locked = true;
   private queueReady = false;
   private draining = false;
@@ -65,11 +67,11 @@ export class DesktopController {
   private publish(): void {
     const rows = this.agent.snapshot(), active = rows.filter(row => !['accepted', 'never_accepted', 'cancelled'].includes(row.outcome));
     const authFailure = rows.find(row => row.outcome === 'uncertain' && row.code && AUTH_RECOVERY_ERRORS.has(row.code));
-    if (authFailure && this.binding) { this.binding = null; this.auth.lock(); this.code = authFailure.code!; }
+    if (authFailure && this.binding) { this.binding = null; this.accountName = null; this.auth.lock(); this.code = authFailure.code!; }
     const history = rows.filter(row => !active.includes(row)).sort((a, b) => b.receivedAt - a.receivedAt).slice(0, 20);
     // No token, receipt, digest, nonce, subject or network/provider response goes to GTK.
     this.emit({ type: 'state', queueReady: this.queueReady, locked: this.locked, connected: this.binding !== null,
-      accountName: this.binding?.accountName ?? null,
+      accountName: this.binding ? this.accountName : null,
       target: this.binding?.target.id === null ? null : this.binding?.target.name ?? null, busy: this.busy, code: this.code, draining: this.draining,
       removalReady: this.removalReady, removed: this.removed,
       jobs: [...active, ...history].slice(0, 50).map(row => ({ operationId: row.operationId, name: row.name,
@@ -93,11 +95,13 @@ export class DesktopController {
     if (this.agent.snapshot().some(row => ['confirming', 'waiting', 'transferring'].includes(row.outcome))) throw new PrinterError('JOBS_IN_PROGRESS');
     const epoch = this.sessionEpoch;
     this.launch(interactive ? 'login' : 'restore', async () => {
-      const abort = new AbortController(); this.authAbort = abort; this.binding = null;
+      const abort = new AbortController(); this.authAbort = abort; this.binding = null; this.accountName = null;
       try {
-        const binding = await (interactive ? this.auth.authorize(abort.signal) : this.auth.restore(abort.signal));
+        const principal = await (interactive ? this.auth.authorize(abort.signal) : this.auth.restore(abort.signal));
         if (this.locked || epoch !== this.sessionEpoch || abort.signal.aborted) throw new PrinterError('SESSION_LOCKED');
+        const { accountName, ...binding } = principal;
         await this.agent.connect(binding); this.binding = binding;
+        this.accountName = accountName;
       } finally { if (this.authAbort === abort) this.authAbort = null; }
     });
   }
@@ -116,7 +120,7 @@ export class DesktopController {
         if (command.locked === this.locked) return;
         this.locked = command.locked; this.sessionEpoch++;
         if (this.locked) {
-          this.authAbort?.abort(); this.auth.lock(); this.binding = null;
+          this.authAbort?.abort(); this.auth.lock(); this.binding = null; this.accountName = null;
           await this.agent.sessionLocked();
         } else if (this.queueReady && !this.draining && !this.busy) this.authenticate(false);
         return;
@@ -129,7 +133,7 @@ export class DesktopController {
         case 'configure':
           if (this.draining || this.agent.snapshot().some(row => ['confirming', 'waiting', 'transferring'].includes(row.outcome))) throw new PrinterError('JOBS_IN_PROGRESS');
           this.launch('setup', async () => {
-            this.binding = null; this.auth.lock(); await this.agent.sessionLocked();
+            this.binding = null; this.accountName = null; this.auth.lock(); await this.agent.sessionLocked();
             await this.native.stop(); this.queueReady = false;
             await this.native.setup('configure');
             if (this.draining) throw new PrinterError('DRAINING');
@@ -150,7 +154,7 @@ export class DesktopController {
         }
         case 'openRecovery': await this.open('recovery'); break;
         case 'prepareRemoval':
-          this.launch('drain', async () => { this.draining = true; this.binding = null; this.auth.lock();
+          this.launch('drain', async () => { this.draining = true; this.binding = null; this.accountName = null; this.auth.lock();
             await this.native.stop(); this.queueReady = false; await this.agent.drain();
             await this.auth.disconnect(AbortSignal.timeout(60_000)); this.removalReady = true; });
           break;
@@ -165,12 +169,12 @@ export class DesktopController {
 
   async tick(): Promise<void> { await this.agent.tick(); this.publish(); }
   async nativeUnavailable(): Promise<void> {
-    this.queueReady = false; this.binding = null; this.code = 'NATIVE_UNAVAILABLE';
+    this.queueReady = false; this.binding = null; this.accountName = null; this.code = 'NATIVE_UNAVAILABLE';
     this.auth.lock(); await this.agent.sessionLocked(); this.publish();
   }
   async stop(): Promise<void> {
     this.draining = true; this.locked = true; this.sessionEpoch++; this.authAbort?.abort(); this.auth.lock();
-    this.binding = null; this.queueReady = false;
+    this.binding = null; this.accountName = null; this.queueReady = false;
     try { await this.agent.drain(); }
     finally {
       // A pending setup/auth/receipt action can still own asynchronous work.

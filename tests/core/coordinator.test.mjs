@@ -7,7 +7,7 @@ import { manifestFingerprint, PrinterError } from '../../core/protocol.ts';
 
 const pdf = Buffer.from('%PDF-1.7\nSynthetic, not a real invoice.\n%%EOF');
 const identity = () => ({ generation: randomUUID(), nativeJobUuid: randomUUID() });
-const binding = () => ({ issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa', clientId: 'fin3000-system-print-qa', subject: `sp_${'a'.repeat(32)}`, accountName: 'Synthetic account', target: { id: randomUUID(), name: 'Testunternehmen' } });
+const binding = () => ({ issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa', clientId: 'fin3000-system-print-qa', subject: `sp_${'a'.repeat(32)}`, target: { id: randomUUID(), name: 'Testunternehmen' } });
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 
 async function waitFor(check) {

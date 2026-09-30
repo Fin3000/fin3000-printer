@@ -40,6 +40,7 @@ test('browser PKCE binds loopback, state, issuer and exact narrow scope before t
   assert.equal(createHash('sha256').update(exchange.code_verifier).digest('base64url'), f.url().searchParams.get('code_challenge'));
   assert.match(exchange.redirect_uri, /^http:\/\/127\.0\.0\.1:\d+\/fin3000-print\/callback$/);
   assert.equal(f.saved[0].binding, null); assert.equal(f.saved[1].binding.target.id, binding.target.id);
+  assert.equal('accountName' in f.saved[1].binding, false);
   assert.equal((await f.agent.access(signal())).accessToken, 'synthetic-access-first');
 });
 

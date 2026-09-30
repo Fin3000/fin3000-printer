@@ -8,7 +8,7 @@ import { NativeTransfer, operationManifest } from '../../core/transfer.ts';
 const signal = () => AbortSignal.timeout(5000);
 function fixture() {
   const pdf = Buffer.from('%PDF-synthetic'), itemId = randomUUID();
-  const binding = { issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa', clientId: 'fin3000-system-print-qa', subject: `sp_${'a'.repeat(32)}`, accountName: 'Synthetic account', target: { id: randomUUID(), name: 'Test' } };
+  const binding = { issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa', clientId: 'fin3000-system-print-qa', subject: `sp_${'a'.repeat(32)}`, target: { id: randomUUID(), name: 'Test' } };
   const record = { operationId: randomUUID(), clientBatchId: randomUUID(), clientItemId: randomUUID(), binding,
     identity: { generation: randomUUID(), nativeJobUuid: randomUUID() }, name: 'Änderung.pdf', size: pdf.length,
     pdfSha256: createHash('sha256').update(pdf).digest('hex'), callbackNonce: 'nonce', delivery: 'possibly_delivered', outcome: 'transferring', receivedAt: Date.now(), extended: false };

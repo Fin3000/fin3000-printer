@@ -9,7 +9,7 @@ function fixture() {
   const record = {
     operationId: randomUUID(), clientBatchId: randomUUID(), clientItemId: randomUUID(), requestFingerprint: 'a'.repeat(64),
     callbackNonce: randomBytes(32).toString('base64url'),
-    binding: { issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa', subject: `sp_${'b'.repeat(32)}`, clientId: 'fin3000-system-print-qa', accountName: 'Synthetic account', target: { id: randomUUID(), name: 'Test' } },
+    binding: { issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa', subject: `sp_${'b'.repeat(32)}`, clientId: 'fin3000-system-print-qa', target: { id: randomUUID(), name: 'Test' } },
   };
   const claims = {
     iss: record.binding.issuer, aud: record.binding.audience, sub: record.binding.subject,

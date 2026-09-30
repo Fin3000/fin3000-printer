@@ -89,7 +89,7 @@ test('drained coordinator releases its real Linux lease with recovery durable an
   let finishNetwork, sends = 0, signal;
   const network = new Promise(resolve => { finishNetwork = resolve; });
   const account = { issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa',
-    clientId: 'fin3000-system-print-qa', subject: `sp_${'b'.repeat(32)}`, accountName: 'Synthetic account', target: { id: null, name: 'Synthetic account' } };
+    clientId: 'fin3000-system-print-qa', subject: `sp_${'b'.repeat(32)}`, target: { id: null, name: 'Synthetic account' } };
   const ports = { clock: { now: () => 1_000_000 }, random: () => 0.5,
     verifier: { verify() { return 'accepted'; } },
     transfer: { send(_row, _bytes, current) { sends++; signal = current; return network; },
@@ -241,7 +241,7 @@ test('damaged checkpoint stops before activating another build and never replace
 test('a compatible older build reads the latest state rather than its earlier checkpoint', async t => {
   const f = await fixture(t);
   const account = { issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa',
-    clientId: 'fin3000-system-print-qa', subject: `sp_${'b'.repeat(32)}`, accountName: 'Synthetic account', target: { id: null, name: 'Synthetic' } };
+    clientId: 'fin3000-system-print-qa', subject: `sp_${'b'.repeat(32)}`, target: { id: null, name: 'Synthetic' } };
   await f.store.close();
   const next = await LinuxStateStore.acquire(f.path, nextRelease);
   const agent = new Coordinator({ store: next, clock: { now: () => 1_000_000 },

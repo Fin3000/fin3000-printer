@@ -15,6 +15,7 @@ export interface SecretStore {
 }
 export interface BrowserPort { open(url: string): Promise<void> }
 export interface AuthorizedToken { accessToken: string; binding: Binding }
+export interface DisplayedBinding extends Binding { accountName: string }
 interface SecretSession {
   version: 1; clientId: string; issuer: string;
   accessToken: string; refreshToken: string; expiresAt: number;
@@ -45,7 +46,7 @@ export class NativeOAuth {
     const result = this.tail.then(action); this.tail = result.catch(() => {}); return result;
   }
 
-  authorize(signal: AbortSignal): Promise<Binding> {
+  authorize(signal: AbortSignal): Promise<DisplayedBinding> {
     return this.exclusive(async () => {
       this.current = null; this.locked = false;
       // Probe the secure adapter before opening a browser. Locked/missing keyring
@@ -56,15 +57,17 @@ export class NativeOAuth {
         code: callback.code, redirect_uri: callback.redirectUri, code_verifier: callback.verifier }, signal);
       const session = this.parseTokens(raw, null);
       await this.persist(session);
-      session.binding = await this.principal(session.accessToken, signal);
+      const principal = await this.principal(session.accessToken, signal);
+      const { accountName: _displayOnly, ...binding } = principal;
+      session.binding = binding;
       await this.persist(session);
       if (this.locked) throw new PrinterError('SESSION_LOCKED');
       this.current = session;
-      return structuredClone(session.binding);
+      return structuredClone(principal);
     });
   }
 
-  restore(signal: AbortSignal): Promise<Binding> {
+  restore(signal: AbortSignal): Promise<DisplayedBinding> {
     return this.exclusive(async () => {
       try {
       this.locked = false; this.current = null;
@@ -74,14 +77,15 @@ export class NativeOAuth {
       if (session.refreshPending) throw new PrinterError('LOGIN_REQUIRED');
       this.current = session;
       await this.fresh(signal);
-      const binding = await this.principal(this.current!.accessToken, signal);
+      const principal = await this.principal(this.current!.accessToken, signal);
+      const { accountName: _displayOnly, ...binding } = principal;
       if (session.binding && !sameBinding(binding, session.binding)) {
         this.current = null; throw new PrinterError('PRINCIPAL_CHANGED');
       }
       this.current!.binding = binding;
       await this.persist(this.current!);
       if (this.locked) { this.current = null; throw new PrinterError('SESSION_LOCKED'); }
-      return structuredClone(binding);
+      return structuredClone(principal);
       } catch (error) { this.current = null; throw error; }
     });
   }
@@ -166,13 +170,13 @@ export class NativeOAuth {
     } catch { throw new PrinterError('SECRET_STATE_INVALID'); }
   }
 
-  private async principal(token: string, signal: AbortSignal): Promise<Binding> {
+  private async principal(token: string, signal: AbortSignal): Promise<DisplayedBinding> {
     const raw = object(await this.http.api('GET', `${PRINT_API}principal/`, undefined, token, signal));
     const capabilities = raw.capabilities;
     if (raw.protocolVersion !== 2 || !Array.isArray(capabilities) ||
         !['operations', 'settlement', 'recovery'].every(value => capabilities.includes(value))) throw new PrinterError('PRINCIPAL_INVALID');
     const target = object(raw.target);
-    const binding: Binding = { issuer: this.config.apiOrigin, audience: this.config.audience,
+    const binding: DisplayedBinding = { issuer: this.config.apiOrigin, audience: this.config.audience,
       clientId: this.config.clientId, subject: raw.subject as string, accountName: raw.accountName as string,
       target: { id: target.id as string | null, name: target.name as string } };
     try { validateBinding(binding); } catch { throw new PrinterError('PRINCIPAL_INVALID'); }
