@@ -83,8 +83,9 @@ async function main(): Promise<void> {
   });
   desktop = new DesktopController({ agent, auth: oauth, native, emit, now: clock.now,
     exportRecovery: (operationId, content) => emit({ type: 'recoveryExport', operationId, content }),
-    open: destination => openBrowser(new URL(destination === 'original' ? '/accounting/incoming-invoices/upload'
-      : '/accounting/incoming-invoices/print-operations', config.appOrigin).href) });
+    open: () => openBrowser(new URL(
+      '/accounting/incoming-invoices/print-operations', config.appOrigin,
+    ).href) });
   await desktop.start();
   let ticking = false;
   const timer = setInterval(() => {

@@ -4,7 +4,7 @@
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
-  "description": "Send confirmed PDF print copies to Fin3000.com from Linux applications",
+  "description": "Send PDF print copies to Fin3000.com from Linux applications",
   "engines": {
     "node": ">=22.18.0"
   },

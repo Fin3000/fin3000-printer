@@ -69,8 +69,8 @@ int main(int argc, char **argv) {
     }
     /* GJS can refuse a callback during GC with a native critical. Continuing
        silently loses the read/session/watchdog chain. Fail-stop in native
-       GLib instead; systemd restarts the group and retained consent state is
-       recovered without resending unconfirmed jobs. Core dumps stay disabled.
+       GLib instead; systemd restarts the group and retained operation state is
+       recovered without resending print jobs. Core dumps stay disabled.
        Apply only to the GTK owner, never the runtime or secret-store helper. */
     if (setenv("G_DEBUG", "fatal-criticals", 1)) return 1;
     char *args[] = {"/usr/bin/gjs-console", "-m", "/usr/lib/fin3000-printer/platforms/linux/app.js", argc == 2 ? "--background" : NULL, NULL};

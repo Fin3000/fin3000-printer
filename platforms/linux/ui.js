@@ -4,7 +4,7 @@ import Gdk from 'gi://Gdk?version=4.0';
 import {translator} from './i18n.js';
 import {RecoveryDialogs} from './recovery-ui.js';
 
-const OUTCOMES = new Set(['waiting', 'confirming', 'transferring', 'uncertain', 'accepted', 'never_accepted', 'cancelled']);
+const OUTCOMES = new Set(['waiting', 'transferring', 'uncertain', 'accepted', 'never_accepted', 'cancelled']);
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const label = text => new Gtk.Label({label: text, wrap: true, xalign: 0, selectable: true});
 const box = () => new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 12});
@@ -25,6 +25,7 @@ export function validateState(state) {
         typeof state.connected !== 'boolean' || typeof state.draining !== 'boolean' ||
         typeof state.removalReady !== 'boolean' || typeof state.removed !== 'boolean' ||
         (state.removed && (!state.draining || !state.removalReady || state.queueReady || state.connected)) ||
+        (state.accountName !== null && (typeof state.accountName !== 'string' || !state.accountName || state.accountName.length > 120 || /[\p{C}]/u.test(state.accountName))) ||
         (state.target !== null && (typeof state.target !== 'string' || state.target.length > 120)) ||
         (state.busy !== null && !['login', 'restore', 'setup', 'transfer', 'reconcile', 'importReceipt', 'drain', 'remove'].includes(state.busy)) ||
         (state.code !== null && (typeof state.code !== 'string' || !/^[A-Z0-9_]{1,80}$/.test(state.code))) ||
@@ -33,8 +34,8 @@ export function validateState(state) {
     for (const job of state.jobs) {
         if (!job || !UUID.test(job.operationId) || seen.has(job.operationId) || !OUTCOMES.has(job.outcome) ||
             typeof job.name !== 'string' || job.name.length > 200 || (job.target !== null && (typeof job.target !== 'string' || job.target.length > 120)) ||
-            typeof job.canSend !== 'boolean' || typeof job.extended !== 'boolean' || !Number.isSafeInteger(job.size) || job.size < 5 || job.size > 20 * 1024 * 1024 ||
-            (job.remainingSeconds !== null && (!Number.isSafeInteger(job.remainingSeconds) || job.remainingSeconds < 0 || job.remainingSeconds > 240))) throw new Error('UI_STATE_INVALID');
+            (job.code !== null && (typeof job.code !== 'string' || !/^[A-Z0-9_]{1,80}$/.test(job.code))) ||
+            !Number.isSafeInteger(job.size) || job.size < 5 || job.size > 20 * 1024 * 1024) throw new Error('UI_STATE_INVALID');
         seen.add(job.operationId);
     }
     return state;
@@ -58,6 +59,8 @@ export class PrinterWindow {
         this.status = label(this.t('starting')); this.status.add_css_class('title-2'); content.append(this.status);
         this.releaseInfo = label(''); this.releaseInfo.add_css_class('dim-label');
         this.releaseInfo.set_visible(false); content.append(this.releaseInfo);
+        this.accountInfo = label(''); this.accountInfo.add_css_class('heading');
+        this.accountInfo.set_visible(false); content.append(this.accountInfo);
         this.release = null;
         this.explanation = label(''); content.append(this.explanation);
         this.error = label(''); this.error.set_visible(false); content.append(this.error);
@@ -83,9 +86,7 @@ export class PrinterWindow {
         keyboard.connect('key-pressed', (_controller, key) => {
             if (key === Gdk.KEY_F1) { this.showHelp(); return true; }
             if (key !== Gdk.KEY_Escape) return false;
-            const confirming = this.current?.jobs.find(job => job.outcome === 'confirming');
-            if (confirming) this.send({action: 'cancel', operationId: confirming.operationId});
-            else this.window.set_visible(false);
+            this.window.set_visible(false);
             return true;
         });
         this.window.add_controller(keyboard);
@@ -114,7 +115,7 @@ export class PrinterWindow {
             for (const [heading, ...paragraphs] of [
                 ['setupRequired', 'setupExplanation'],
                 ['connectRequired', 'connectExplanation'],
-                ['jobs', 'readyExplanation', 'confirmNotice'],
+                ['jobs', 'readyExplanation'],
                 ['recovery', 'uncertain', 'receiptExplanation'],
                 ['prepareRemoval', 'drainExplanation'],
                 ['installerTitle', 'installerExplanation', 'installerTrust', 'installerUpdates'],
@@ -182,6 +183,8 @@ export class PrinterWindow {
         const status = state.removed ? 'removed' : state.draining ? 'draining' : state.locked ? 'locked' : !state.queueReady ? 'setupRequired' : !state.connected ? 'connectRequired' : 'ready';
         const explanations = {removed: 'removedExplanation', draining: 'drainExplanation', locked: 'lockedExplanation', setupRequired: 'setupExplanation', connectRequired: 'connectExplanation', ready: 'readyExplanation'};
         this.status.set_label(this.t(status, {target: state.target ?? this.t('unassigned')}));
+        this.accountInfo.set_label(state.accountName ? `Fin3000 · ${state.accountName}` : '');
+        this.accountInfo.set_visible(Boolean(state.accountName));
         this.explanation.set_label(this.t(state.busy === 'login' ? 'loginWorking' : explanations[status]));
         const error = this.errorText(state.code); this.error.set_label(error); this.error.set_visible(Boolean(error));
         this.configure.set_visible(!state.draining && !state.queueReady);
@@ -195,23 +198,15 @@ export class PrinterWindow {
         this.empty.set_visible(!state.jobs.length);
         const wanted = new Set(state.jobs.map(job => job.operationId));
         for (const [id, row] of this.rows) if (!wanted.has(id)) { this.list.remove(row.frame); this.rows.delete(id); }
-        let sibling = null, confirmation = null;
+        let sibling = null;
         for (const job of state.jobs) {
             let row = this.rows.get(job.operationId);
             if (!row) { row = this.createJob(job); this.rows.set(job.operationId, row); this.list.append(row.frame); }
             // Preserve widget identity/focus but follow the coordinator's active-
-            // first ordering; appending new rows hid confirmations below history.
+            // first ordering; appending new rows hid active jobs below history.
             if (row.frame.get_prev_sibling() !== sibling) this.list.reorder_child_after(row.frame, sibling);
             sibling = row.frame;
             this.updateJob(row, job, state);
-            if (job.outcome === 'confirming' && previous?.jobs.find(old => old.operationId === job.operationId)?.outcome !== 'confirming') {
-                confirmation = row;
-            }
-        }
-        if (confirmation) {
-            this.window.present();
-            this.window.get_child().get_vadjustment().set_value(0);
-            confirmation.cancel.grab_focus(); // Never initial-focus Send.
         }
         if (state.code === 'CONNECT_AND_REPRINT' && previous?.code !== state.code) this.window.present();
     }
@@ -224,11 +219,9 @@ export class PrinterWindow {
         const name = label(''); body.append(name);
         const details = label(''); body.append(details);
         const outcome = label(''); body.append(outcome);
-        const notice = label(this.t('confirmNotice')); body.append(notice);
-        const countdown = label(''); body.append(countdown);
         const buttons = {};
-        for (const [key, action] of [['cancel', 'cancel'], ['send', 'confirm'], ['extend', 'extend'], ['original', 'original'], ['reconcile', 'reconcile']]) {
-            buttons[key] = this.button(key, () => { if (key === 'send') buttons.send.set_sensitive(false); this.send({action, operationId: job.operationId}); });
+        for (const [key, action] of [['cancel', 'cancel'], ['reconcile', 'reconcile']]) {
+            buttons[key] = this.button(key, () => this.send({action, operationId: job.operationId}));
             body.append(buttons[key]);
         }
         buttons.exportRecovery = this.button('exportRecovery', () => {
@@ -238,20 +231,14 @@ export class PrinterWindow {
         buttons.importReceipt = this.button('importReceipt', () => this.dialogs.receipt(this.current.jobs.find(item => item.operationId === job.operationId)));
         body.append(buttons.importReceipt);
         const operation = label(this.t('operation', {id: job.operationId})); operation.add_css_class('dim-label'); body.append(operation);
-        return {frame, target, name, details, outcome, notice, countdown, ...buttons};
+        return {frame, target, name, details, outcome, ...buttons};
     }
 
     updateJob(row, job, state) {
         row.target.set_label(this.t('target', {target: job.target ?? this.t('unassigned')})); row.name.set_label(job.name);
         row.details.set_label(this.t('details', {size: (job.size / 1024 / 1024).toFixed(2)}));
         row.outcome.set_label(this.t(job.outcome));
-        const confirming = job.outcome === 'confirming';
-        row.notice.set_visible(confirming); row.countdown.set_visible(confirming);
-        row.countdown.set_label(confirming ? this.t('countdown', {seconds: job.remainingSeconds}) : '');
-        row.send.set_visible(confirming); row.send.set_sensitive(job.canSend && !state.busy);
-        row.cancel.set_visible(['waiting', 'confirming', 'transferring'].includes(job.outcome)); row.cancel.set_sensitive(!state.locked);
-        row.extend.set_visible(confirming && !job.extended && job.remainingSeconds <= 30); row.extend.set_sensitive(!state.locked);
-        row.original.set_visible(confirming); row.original.set_sensitive(!state.locked && !state.busy);
+        row.cancel.set_visible(job.outcome === 'waiting'); row.cancel.set_sensitive(!state.locked && !state.busy);
         row.reconcile.set_visible(job.outcome === 'uncertain'); row.reconcile.set_sensitive(state.connected && !state.locked && !state.busy);
         for (const button of [row.exportRecovery, row.importReceipt]) {
             button.set_visible(job.outcome === 'uncertain'); button.set_sensitive(!state.locked && !state.busy);

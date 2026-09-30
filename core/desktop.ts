@@ -2,7 +2,7 @@
 import type { Coordinator } from './coordinator.ts';
 import type { Control } from './control-wire.ts';
 import type { Binding, JobIdentity, JobRecord } from './protocol.ts';
-import { PrinterError, sameBinding } from './protocol.ts';
+import { PrinterError } from './protocol.ts';
 import { AUTH_RECOVERY_ERRORS } from './retry.ts';
 import { recoveryExport } from './recovery-export.ts';
 
@@ -19,20 +19,20 @@ export interface DesktopNative {
 }
 export interface DesktopState {
   type: 'state'; queueReady: boolean; locked: boolean; connected: boolean;
-  target: string | null; busy: string | null; code: string | null; draining: boolean;
+  accountName: string | null; target: string | null; busy: string | null; code: string | null; draining: boolean;
   removalReady: boolean; removed: boolean;
-  jobs: Array<Pick<JobRecord, 'operationId' | 'name' | 'size' | 'outcome' | 'receivedAt' | 'extended'> & {
-    target: string | null; remainingSeconds: number | null; canSend: boolean;
+  jobs: Array<Pick<JobRecord, 'operationId' | 'name' | 'size' | 'outcome' | 'receivedAt'> & {
+    target: string | null; code: string | null;
   }>;
 }
-type Agent = Pick<Coordinator, 'start' | 'admit' | 'connect' | 'confirm' | 'cancel' | 'extendConfirmation' | 'reconcile' | 'importReceipt' | 'sessionLocked' | 'drain' | 'tick' | 'snapshot'>;
+type Agent = Pick<Coordinator, 'start' | 'admit' | 'connect' | 'cancel' | 'reconcile' | 'importReceipt' | 'sessionLocked' | 'drain' | 'tick' | 'snapshot'>;
 
 export class DesktopController {
   private agent: Agent;
   private auth: AuthPort;
   private native: DesktopNative;
   private emit: (state: DesktopState) => void;
-  private open: (destination: 'recovery' | 'original') => Promise<void>;
+  private open: (destination: 'recovery') => Promise<void>;
   private exportRecovery: (operationId: string, content: string) => void;
   private now: () => number;
   private binding: Binding | null = null;
@@ -49,7 +49,7 @@ export class DesktopController {
 
   constructor(ports: { agent: Agent; auth: AuthPort; native: DesktopNative; emit: (state: DesktopState) => void;
     exportRecovery: (operationId: string, content: string) => void;
-    open: (destination: 'recovery' | 'original') => Promise<void>; now: () => number }) {
+    open: (destination: 'recovery') => Promise<void>; now: () => number }) {
     this.agent = ports.agent; this.auth = ports.auth; this.native = ports.native;
     this.emit = ports.emit; this.open = ports.open; this.now = ports.now;
     this.exportRecovery = ports.exportRecovery;
@@ -69,13 +69,13 @@ export class DesktopController {
     const history = rows.filter(row => !active.includes(row)).sort((a, b) => b.receivedAt - a.receivedAt).slice(0, 20);
     // No token, receipt, digest, nonce, subject or network/provider response goes to GTK.
     this.emit({ type: 'state', queueReady: this.queueReady, locked: this.locked, connected: this.binding !== null,
+      accountName: this.binding?.accountName ?? null,
       target: this.binding?.target.id === null ? null : this.binding?.target.name ?? null, busy: this.busy, code: this.code, draining: this.draining,
       removalReady: this.removalReady, removed: this.removed,
       jobs: [...active, ...history].slice(0, 50).map(row => ({ operationId: row.operationId, name: row.name,
-        size: row.size, outcome: row.outcome, receivedAt: row.receivedAt, extended: row.extended,
-        target: row.binding.target.id === null ? null : row.binding.target.name, remainingSeconds: row.outcome === 'confirming'
-          ? Math.max(0, Math.ceil((row.confirmationDeadline! - this.now()) / 1000)) : null,
-        canSend: row.outcome === 'confirming' && !this.locked && !this.draining && this.binding !== null && sameBinding(row.binding, this.binding),
+        size: row.size, outcome: row.outcome, receivedAt: row.receivedAt,
+        target: row.binding.target.id === null ? null : row.binding.target.name,
+        code: row.code ?? null,
       })) });
   }
 
@@ -137,12 +137,9 @@ export class DesktopController {
             if (!this.draining) this.queueReady = true;
           });
           break;
-        case 'confirm':
-          this.launch('transfer', () => this.agent.confirm(command.operationId)); break;
         case 'reconcile':
           this.launch('reconcile', () => this.agent.reconcile(command.operationId)); break;
         case 'cancel': await this.agent.cancel(command.operationId); break;
-        case 'extend': await this.agent.extendConfirmation(command.operationId); break;
         case 'importReceipt': this.launch('importReceipt', () => this.agent.importReceipt(command.operationId, command.receipt)); break;
         case 'exportRecovery': {
           if (this.busy) throw new PrinterError('ACTION_IN_PROGRESS');
@@ -150,11 +147,6 @@ export class DesktopController {
           if (!row) throw new PrinterError('RECOVERY_NOT_AVAILABLE');
           const content = recoveryExport(row);
           this.exportRecovery(row.operationId, content); this.code = null; break;
-        }
-        case 'original': {
-          const row = this.agent.snapshot().find(item => item.operationId === command.operationId);
-          if (!row || !['confirming', 'waiting'].includes(row.outcome)) throw new PrinterError('ORIGINAL_NOT_AVAILABLE');
-          await this.agent.cancel(row.operationId); await this.open('original'); break;
         }
         case 'openRecovery': await this.open('recovery'); break;
         case 'prepareRemoval':

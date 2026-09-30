@@ -89,7 +89,7 @@ test('drained coordinator releases its real Linux lease with recovery durable an
   let finishNetwork, sends = 0, signal;
   const network = new Promise(resolve => { finishNetwork = resolve; });
   const account = { issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa',
-    clientId: 'fin3000-system-print-qa', subject: `sp_${'b'.repeat(32)}`, target: { id: null, name: 'Synthetic account' } };
+    clientId: 'fin3000-system-print-qa', subject: `sp_${'b'.repeat(32)}`, accountName: 'Synthetic account', target: { id: null, name: 'Synthetic account' } };
   const ports = { clock: { now: () => 1_000_000 }, random: () => 0.5,
     verifier: { verify() { return 'accepted'; } },
     transfer: { send(_row, _bytes, current) { sends++; signal = current; return network; },
@@ -98,13 +98,12 @@ test('drained coordinator releases its real Linux lease with recovery durable an
   await agent.start(); await agent.connect(account);
   const job = await agent.admit({ generation: randomUUID(), nativeJobUuid: randomUUID() },
     'Synthetic', Buffer.from('%PDF-synthetic'));
-  const running = agent.confirm(job.operationId);
-  t.after(async () => { finishNetwork('accepted'); await running; });
+  t.after(async () => { finishNetwork('accepted'); await agent.drain(); });
   // The real fsync path need not finish in one event-loop turn.
   for (let step = 0; step < 100 && !signal; step++) await new Promise(resolve => setTimeout(resolve, 10));
   assert.ok(signal, 'the transfer must have reached the network boundary');
   await assert.rejects(LinuxStateStore.acquire(f.path, release), { code: 'INSTANCE_ALREADY_RUNNING' });
-  await agent.drain(); await running;
+  await agent.drain();
   assert.equal(signal.aborted, true);
   const before = await readFile(join(f.path, 'state.json'), 'utf8');
   const saved = JSON.parse(before);
@@ -242,7 +241,7 @@ test('damaged checkpoint stops before activating another build and never replace
 test('a compatible older build reads the latest state rather than its earlier checkpoint', async t => {
   const f = await fixture(t);
   const account = { issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa',
-    clientId: 'fin3000-system-print-qa', subject: `sp_${'b'.repeat(32)}`, target: { id: null, name: 'Synthetic' } };
+    clientId: 'fin3000-system-print-qa', subject: `sp_${'b'.repeat(32)}`, accountName: 'Synthetic account', target: { id: null, name: 'Synthetic' } };
   await f.store.close();
   const next = await LinuxStateStore.acquire(f.path, nextRelease);
   const agent = new Coordinator({ store: next, clock: { now: () => 1_000_000 },

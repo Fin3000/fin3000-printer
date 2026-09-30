@@ -7,9 +7,10 @@ async function* chunks(...values) { for (const value of values) yield Buffer.fro
 
 test('strict desktop action grammar has no arbitrary URL, path, account or executable', () => {
   assert.deepEqual(control({ action: 'configure' }), { action: 'configure' });
-  assert.deepEqual(control({ action: 'confirm', operationId: randomUUID() }).action, 'confirm');
+  assert.deepEqual(control({ action: 'cancel', operationId: randomUUID() }).action, 'cancel');
   for (const bad of [null, [], { action: 'exec', command: 'anything' }, { action: 'connect', targetId: randomUUID() },
-    { action: 'openRecovery', url: 'https://foreign.test' }, { action: 'confirm', operationId: '../file' },
+    { action: 'openRecovery', url: 'https://foreign.test' }, { action: 'confirm', operationId: randomUUID() },
+    { action: 'extend', operationId: randomUUID() }, { action: 'original', operationId: randomUUID() },
     { action: 'session', locked: 'false' }, { action: 'importReceipt', operationId: randomUUID(), receipt: 'invalid' }]) {
     assert.throws(() => control(bad), { code: 'CONTROL_INVALID' });
   }

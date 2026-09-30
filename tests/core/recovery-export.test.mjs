@@ -7,7 +7,7 @@ function record() {
   return {operationId: randomUUID(), clientBatchId: randomUUID(), clientItemId: randomUUID(),
     identity: {generation: randomUUID(), nativeJobUuid: randomUUID()},
     binding: {issuer: 'https://api.fin3000.test', audience: 'fin3000-printer:qa', clientId: 'fin3000-system-print-qa',
-      subject: `sp_${'a'.repeat(32)}`, target: {id: randomUUID(), name: 'PRIVATE-TARGET'}},
+      subject: `sp_${'a'.repeat(32)}`, accountName: 'PRIVATE-ACCOUNT', target: {id: randomUUID(), name: 'PRIVATE-TARGET'}},
     name: 'PRIVATE-DOCUMENT.pdf', size: 93872, requestFingerprint: 'b'.repeat(64), pdfSha256: 'c'.repeat(64),
     callbackNonce: randomBytes(32).toString('base64url'), outcome: 'uncertain', delivery: 'possibly_delivered', receivedAt: 1000000,
     extended: false, code: 'LOGIN_REQUIRED'};

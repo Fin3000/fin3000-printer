@@ -12,7 +12,7 @@ function fixture(options = {}) {
   let secret = options.secret ?? null;
   const saved = [], calls = [], clock = { time: Date.now(), now() { return this.time; } };
   const target = { id: randomUUID(), name: 'Synthetisches Unternehmen' };
-  const principal = { protocolVersion: 2, subject: `sp_${'a'.repeat(32)}`, target, capabilities: ['operations', 'settlement', 'recovery'] };
+  const principal = { protocolVersion: 2, subject: `sp_${'a'.repeat(32)}`, accountName: 'Synthetic account', target, capabilities: ['operations', 'settlement', 'recovery'] };
   const secrets = { async load() { return secret; }, async save(value) { secret = value; saved.push(JSON.parse(value)); }, async clear() { secret = null; }, ...options.secrets };
   let authorizeUrl;
   const browser = { async open(value) {
@@ -34,6 +34,7 @@ function fixture(options = {}) {
 test('browser PKCE binds loopback, state, issuer and exact narrow scope before token persistence', async () => {
   const f = fixture(); const binding = await f.agent.authorize(signal());
   assert.equal(binding.target.id, f.principal.target.id);
+  assert.equal(binding.accountName, f.principal.accountName);
   assert.equal(f.url().pathname, '/oauth/authorize'); assert.equal(f.url().searchParams.get('scope'), 'intake:write');
   const exchange = f.calls[0]; assert.equal(exchange.client_id, config.clientId); assert.equal(exchange.grant_type, 'authorization_code');
   assert.equal(createHash('sha256').update(exchange.code_verifier).digest('base64url'), f.url().searchParams.get('code_challenge'));

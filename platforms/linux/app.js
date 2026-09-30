@@ -22,6 +22,7 @@ const QA_BUILD = false;
 const application = new Gtk.Application({application_id: 'com.fin3000.Printer', flags: Gio.ApplicationFlags.HANDLES_COMMAND_LINE});
 let view, process, output, writing = false, queuedBytes = 0, stopped = false, updating = false, exited = false;
 const queue = [];
+let previousJobs = new Map();
 const encoder = new TextEncoder(), decoder = new TextDecoder('utf-8', {fatal: true});
 
 function fatal(code) {
@@ -69,8 +70,34 @@ function browser(message) {
     } catch { reply(); }
 }
 
+function notifyTransitions(state) {
+    const current = new Map(state.jobs.map(job => [job.operationId, job]));
+    for (const job of state.jobs) {
+        const previous = previousJobs.get(job.operationId);
+        let keys = null;
+        if (!previous && ['waiting', 'transferring'].includes(job.outcome)) {
+            keys = ['title', 'transferring'];
+        } else if (previous && previous.outcome !== job.outcome && job.outcome === 'accepted') {
+            keys = ['title', 'accepted'];
+        } else if (previous && previous.outcome !== job.outcome && job.outcome === 'never_accepted') {
+            keys = ['title', 'never_accepted'];
+        } else if ((!previous || previous.outcome !== job.outcome) && job.outcome === 'uncertain') {
+            keys = ['title', 'uncertain'];
+        } else if ((!previous || previous.code !== job.code) &&
+            ['REPRINT_AFTER_RESTART', 'REPRINT_AFTER_RECOVERY'].includes(job.code)) {
+            keys = ['title', 'reprint'];
+        }
+        if (!keys) continue;
+        const notification = new Gio.Notification();
+        notification.set_title(view.t(keys[0]));
+        notification.set_body(view.t(keys[1]));
+        application.send_notification(`fin3000-print-${job.operationId}`, notification);
+    }
+    previousJobs = current;
+}
+
 function receive(message) {
-    if (message?.type === 'state') view.update(message);
+    if (message?.type === 'state') { view.update(message); notifyTransitions(message); }
     else if (message?.type === 'release') view.setRelease(message);
     else if (message?.type === 'fatal') view.fatal(message.code);
     else if (message?.type === 'browser') browser(message);

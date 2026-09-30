@@ -10,9 +10,10 @@
 · [Tools & Downloads](https://fin3000.com/tools/)
 · [Project page](https://fin3000.github.io/fin3000-printer/)
 
-Send a PDF print copy to your Fin3000 invoice inbox from an application's print
-dialog. Fin3000 Drucker adds **An Fin3000 senden (Cloud-Upload)** as a print
-destination and asks you to confirm each upload in its desktop window.
+Send a PDF print copy to Fin3000 from an application's print dialog. Fin3000
+Drucker adds **An Fin3000 senden (Cloud-Upload)** as a print destination. Once
+you select it and press the operating system's print button, the copy is queued
+and uploaded automatically; there is no second send button.
 
 The source project is called `fin3000-printer` and is licensed under
 [Apache-2.0](LICENSE).
@@ -50,9 +51,8 @@ are not yet offered as a supported public service.
    Firefox may display the queue identifier `Fin3000-…` instead of its label.
    In Chromium-based browsers, open the system print dialog with
    **Ctrl+Shift+P**.
-4. Check the destination and print-copy details in the desktop window, then
-   choose **Send print copy to Fin3000**. Choose **Cancel** if you do not want
-   to upload it. Each copy needs its own confirmation.
+4. The app queues and uploads the print copy automatically. While a copy is
+   still waiting behind another upload, you can cancel it in the desktop app.
 5. Check the result in the app. An accepted copy has reached Fin3000; further
    document processing may still be running.
 
@@ -62,14 +62,16 @@ data. The printer accepts PDF print copies up to 20 MiB.
 
 ## Privacy and interrupted uploads
 
-Printing to this destination is a cloud upload, not a paper printout. The app
-shows where the copy will go before you send it. Login credentials use the
-desktop's secure keyring. A locked or unavailable keyring prevents the app
-from becoming ready.
+Printing to this destination is a cloud upload, not a paper printout. Selecting
+the destination and pressing the operating system's print button starts that
+upload. The app shows the connected account and destination before printing.
+Login credentials use the desktop's secure keyring. A locked or unavailable
+keyring prevents the app from becoming ready.
 
-Unconfirmed copies are not automatically sent after you unlock your desktop.
-If a result is uncertain, **check its status before printing again**. Recovery
-checks the existing operation; it does not resend the PDF. The app can save
+Jobs that cannot safely start after a restart or locked session are cancelled
+and must be printed again. If a result is uncertain, **check its status before
+printing again**. Recovery checks the existing operation; it does not resend
+the PDF. The app can save
 an unresolved-status file containing technical operation identifiers, not the
 invoice or login credentials. Keep that file private: it is a recovery aid,
 not proof that a document was received.

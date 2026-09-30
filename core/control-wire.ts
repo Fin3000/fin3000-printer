@@ -2,7 +2,7 @@
 import { PrinterError, UUID_PATTERN } from './protocol.ts';
 
 export type Control = { action: 'connect' | 'cancelLogin' | 'configure' | 'prepareRemoval' | 'remove' | 'openRecovery' }
-  | { action: 'confirm' | 'cancel' | 'extend' | 'reconcile' | 'original' | 'exportRecovery'; operationId: string }
+  | { action: 'cancel' | 'reconcile' | 'exportRecovery'; operationId: string }
   | { action: 'importReceipt'; operationId: string; receipt: string }
   | { action: 'session'; locked: boolean }
   | { action: 'browserResult'; requestId: string; ok: boolean };
@@ -12,7 +12,7 @@ export function control(value: unknown): Control {
   const raw = value as Record<string, unknown>, keys = Object.keys(raw).sort().join(',');
   if (typeof raw.action !== 'string') throw new PrinterError('CONTROL_INVALID');
   if (['connect', 'cancelLogin', 'configure', 'prepareRemoval', 'remove', 'openRecovery'].includes(raw.action) && keys === 'action') return raw as Control;
-  if (['confirm', 'cancel', 'extend', 'reconcile', 'original', 'exportRecovery'].includes(raw.action) && keys === 'action,operationId' &&
+  if (['cancel', 'reconcile', 'exportRecovery'].includes(raw.action) && keys === 'action,operationId' &&
       typeof raw.operationId === 'string' && UUID_PATTERN.test(raw.operationId)) return raw as Control;
   if (raw.action === 'importReceipt' && keys === 'action,operationId,receipt' && typeof raw.operationId === 'string' &&
       UUID_PATTERN.test(raw.operationId) && typeof raw.receipt === 'string' && raw.receipt.length <= 8192 &&

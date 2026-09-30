@@ -173,7 +173,8 @@ export class NativeOAuth {
         !['operations', 'settlement', 'recovery'].every(value => capabilities.includes(value))) throw new PrinterError('PRINCIPAL_INVALID');
     const target = object(raw.target);
     const binding: Binding = { issuer: this.config.apiOrigin, audience: this.config.audience,
-      clientId: this.config.clientId, subject: raw.subject as string, target: { id: target.id as string | null, name: target.name as string } };
+      clientId: this.config.clientId, subject: raw.subject as string, accountName: raw.accountName as string,
+      target: { id: target.id as string | null, name: target.name as string } };
     try { validateBinding(binding); } catch { throw new PrinterError('PRINCIPAL_INVALID'); }
     return binding;
   }

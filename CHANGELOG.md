@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+- Upload a print copy automatically after the operating system print action,
+  removing the redundant desktop confirmation. Persist admissions before
+  transfer, serialize uploads, cap active work, and preserve explicit
+  uncertain-result recovery without automatic resending.
+- Show account and destination before printing, retain cancellability only for
+  queued jobs, and document the single-action privacy and recovery behavior.
+
 - Add a German project page with Fin3000 branding, product-specific search
   metadata, installation guidance and links to Fin3000.com. Include a
   self-contained Tailwind documentation build and branded README navigation.

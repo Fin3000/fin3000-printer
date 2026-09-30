@@ -23,6 +23,16 @@ def build_core_guard(directory):
 
 
 class DesktopLauncherTests(unittest.TestCase):
+    def test_status_notifications_never_include_document_or_account_fields(self):
+        source = (ROOT / 'platforms/linux/app.js').read_text()
+        handler = source.split('function notifyTransitions(state) {', 1)[1].split('function receive(', 1)[0]
+        self.assertIn('application.send_notification', handler)
+        self.assertIn("keys = ['title', 'accepted']", handler)
+        self.assertIn("keys = ['title', 'uncertain']", handler)
+        self.assertNotIn('job.name', handler)
+        self.assertNotIn('job.target', handler)
+        self.assertNotIn('accountName', handler)
+
     def test_remote_command_line_is_completed_without_waiting_for_garbage_collection(self):
         source = (ROOT / 'platforms/linux/app.js').read_text()
         start = source.index("application.connect('command-line', ")
@@ -296,8 +306,8 @@ class NativeUiTests(unittest.TestCase):
             self.assertTrue(result.stdout.strip(), result.stderr.decode()[-3000:])
             self.assertEqual(json.loads(result.stdout), expected)
 
-    def test_real_gtk_confirmation_keyboard_focus_lock_and_unknown_state(self):
-        self.run_fixture("linux-product-ui.js", {"ok": True, "realGtk": True, "cases": 36, "uploads": 0, "hostPrinters": 0})
+    def test_real_gtk_single_action_queue_lock_and_unknown_state(self):
+        self.run_fixture("linux-product-ui.js", {"ok": True, "realGtk": True, "cases": 33, "uploads": 0, "hostPrinters": 0})
 
     def test_recovery_dialogs_private_export_no_overwrite_and_locked_receipt_input(self):
         self.run_fixture("linux-recovery-ui.js", {"ok": True, "realGtk": True, "privateFileIo": True, "cases": 24, "uploads": 0, "hostPrinters": 0})

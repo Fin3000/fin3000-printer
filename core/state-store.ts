@@ -54,8 +54,11 @@ export function validateSnapshot(value: unknown): StateSnapshot {
     for (const row of state.jobs) {
       exactKeys(row, KEYS);
       exactKeys(row.identity, new Set(['generation', 'nativeJobUuid']));
-      exactKeys(row.binding, new Set(['issuer', 'audience', 'clientId', 'subject', 'target']));
+      exactKeys(row.binding, new Set(['issuer', 'audience', 'clientId', 'subject', 'accountName', 'target']));
       exactKeys(row.binding.target, new Set(['id', 'name']));
+      // Schema-v1 records created before account display used the target label
+      // as their only safe human-readable fallback.
+      row.binding.accountName ??= row.binding.target.name;
       validateBinding(row.binding);
       if (!UUID_PATTERN.test(row.operationId) || !UUID_PATTERN.test(row.clientBatchId) || !UUID_PATTERN.test(row.clientItemId) ||
           ids.has(row.operationId) || identities.has(jobKey(row.identity)) ||

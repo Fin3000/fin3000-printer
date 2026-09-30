@@ -38,9 +38,9 @@ let changed = false;
 try { view.setRelease({...release, version: '0.0.0~qa4'}); } catch { changed = true; }
 assert(changed && view.releaseInfo.get_label().includes('~qa3') && actions.length === 0, 'running build identity cannot silently change or trigger action');
 const id = GLib.uuid_string_random();
-const job = {operationId: id, name: '<b>Synthetic invoice & only test</b>.pdf', size: 1024, outcome: 'confirming',
-    receivedAt: 1_000_000, extended: false, target: 'Synthetic <company>', remainingSeconds: 120, canSend: true};
-const state = {type: 'state', queueReady: true, locked: false, connected: true, target: job.target,
+const job = {operationId: id, name: '<b>Synthetic invoice & only test</b>.pdf', size: 1024, outcome: 'waiting',
+    receivedAt: 1_000_000, target: 'Synthetic <company>', code: null};
+const state = {type: 'state', queueReady: true, locked: false, connected: true, accountName: 'Synthetic account', target: job.target,
     busy: null, code: null, draining: false, removalReady: false, removed: false, jobs: [job]};
 view.update(state);
 const loop = GLib.MainLoop.new(null, false);
@@ -48,44 +48,42 @@ let failed = false;
 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
     try {
         const row = view.rows.get(id);
-        assert(view.window.get_focus() === row.cancel, 'initial focus must be Cancel');
+        assert(view.accountInfo.get_label() === 'Fin3000 · Synthetic account', 'connected account is visible separately from target');
         assert(row.name.get_label() === job.name && !row.name.get_use_markup(), 'job title must be plain text');
         assert(row.target.get_label().includes(job.target) && !row.target.get_use_markup(), 'target must be plain text');
         view.update({...state, target: null, jobs: [{...job, target: null}]});
         assert(row.target.get_label().includes('No fixed assignment'), 'unassigned job has localized destination');
         assert(view.status.get_label().includes('No fixed assignment'), 'unassigned connection is ready');
         view.update(state);
-        assert(row.send.get_sensitive() && !row.extend.get_visible(), 'initial confirmation controls');
-        row.send.emit('clicked');
-        assert(actions.length === 1 && actions[0].action === 'confirm' && actions[0].operationId === id, 'explicit send action only');
-        assert(!row.send.get_sensitive(), 'double click disabled immediately');
-        view.update({...state, jobs: [{...job, remainingSeconds: 30}]});
-        assert(view.rows.get(id) === row && row.extend.get_visible(), 'countdown must preserve widgets/focus');
-        view.update({...state, locked: true, connected: false, jobs: [{...job, canSend: false}]});
-        assert(!row.send.get_sensitive() && !row.cancel.get_sensitive(), 'locked session disables mutation');
-        view.update({...state, jobs: [{...job, outcome: 'uncertain', remainingSeconds: null, canSend: false}]});
-        assert(!row.send.get_visible() && !row.original.get_visible() && row.reconcile.get_visible(), 'uncertain may reconcile, not resend/original');
+        assert(row.cancel.get_visible() && row.cancel.get_sensitive(), 'queued job may be cancelled before transfer');
+        row.cancel.emit('clicked');
+        assert(actions.length === 1 && actions[0].action === 'cancel' && actions[0].operationId === id, 'queued cancel is explicit');
+        view.update({...state, jobs: [{...job, outcome: 'transferring'}]});
+        assert(view.rows.get(id) === row && !row.cancel.get_visible(), 'active transfer has no unsafe cancel or send control');
+        view.update({...state, locked: true, connected: false, jobs: [{...job, outcome: 'waiting'}]});
+        assert(!row.cancel.get_sensitive(), 'locked session disables queued cancellation');
+        view.update({...state, jobs: [{...job, outcome: 'uncertain'}]});
+        assert(!row.cancel.get_visible() && row.reconcile.get_visible(), 'uncertain may reconcile, never resend');
         assert(row.exportRecovery.get_visible() && row.importReceipt.get_visible(), 'uncertain offers explicit local recovery');
-        view.update({...state, connected: false, jobs: [{...job, outcome: 'uncertain', remainingSeconds: null, canSend: false}]});
+        view.update({...state, connected: false, jobs: [{...job, outcome: 'uncertain'}]});
         assert(!row.reconcile.get_sensitive() && row.exportRecovery.get_sensitive() && row.importReceipt.get_sensitive(), 'offline recovery does not need OAuth');
         row.importReceipt.emit('clicked');
         assert(view.dialogs.pending?.operationId === id, 'receipt dialog is bound to clicked job');
-        view.update({...state, locked: true, jobs: [{...job, outcome: 'uncertain', remainingSeconds: null, canSend: false}]});
+        view.update({...state, locked: true, jobs: [{...job, outcome: 'uncertain'}]});
         assert(view.dialogs.pending === null && !row.importReceipt.get_sensitive(), 'locking closes recovery dialog');
-        view.update({...state, jobs: [{...job, outcome: 'uncertain', remainingSeconds: null, canSend: false}]});
+        view.update({...state, jobs: [{...job, outcome: 'uncertain'}]});
         assert(row.outcome.get_label().includes('Do not print again'), 'explicit unknown outcome warning');
-        view.update({...state, jobs: [{...job, outcome: 'accepted', remainingSeconds: null, canSend: false}]});
+        view.update({...state, jobs: [{...job, outcome: 'accepted'}]});
         assert(row.outcome.get_label() === 'Print copy received. Checks are running.', 'received is not finished accounting');
         const nextId = '22222222-2222-4222-8222-222222222222';
         const nextJob = {...job, operationId: nextId, receivedAt: job.receivedAt + 1};
-        const history = {...job, outcome: 'accepted', remainingSeconds: null, canSend: false};
+        const history = {...job, outcome: 'accepted'};
         view.update({...state, jobs: [nextJob, history]});
         const nextRow = view.rows.get(nextId);
         assert(view.list.get_first_child() === nextRow.frame && nextRow.frame.get_next_sibling() === row.frame,
-            'new confirmation must precede existing history, matching coordinator order');
-        assert(view.rows.get(id) === row && view.window.get_focus() === nextRow.cancel,
-            'reordering keeps existing widgets and never focuses Send');
-        view.update({...state, jobs: [history, {...nextJob, outcome: 'accepted', remainingSeconds: null, canSend: false}]});
+            'new queued job must precede existing history, matching coordinator order');
+        assert(view.rows.get(id) === row, 'reordering keeps existing widget identity');
+        view.update({...state, jobs: [history, {...nextJob, outcome: 'accepted'}]});
         assert(view.list.get_first_child() === row.frame && row.frame.get_next_sibling() === nextRow.frame,
             'existing rows follow changed authoritative order too');
         view.update({...state, jobs: [history]});
@@ -125,7 +123,7 @@ GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
             texts.some(text => text.includes('structured e-invoice')) &&
             !texts.some(text => text.includes(id) || text.includes(job.name) || text.includes(job.target)),
         'bundled help explains uncertainty and print-copy limits without exposing job or account data');
-        print(JSON.stringify({ok: true, realGtk: true, cases: 36, uploads: 0, hostPrinters: 0}));
+        print(JSON.stringify({ok: true, realGtk: true, cases: 33, uploads: 0, hostPrinters: 0}));
     } catch (error) {
         failed = true; printerr(error.message);
     } finally { view.window.destroy(); loop.quit(); }
