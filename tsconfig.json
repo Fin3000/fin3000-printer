@@ -9,5 +9,5 @@
     "erasableSyntaxOnly": true,
     "skipLibCheck": true
   },
-  "include": ["core/**/*.ts", "platforms/linux/**/*.ts"]
+  "include": ["core/**/*.ts", "platforms/linux/**/*.ts", "platforms/macos/**/*.ts"]
 }

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Add a macOS 26 Apple Silicon system printer, with per-user queue, macOS Keychain, manual history, and separate QA and notarized release packaging.
+
 - Send one four-second upload notice on Ubuntu. Open print history only when requested.
 
 - Keep the generated Debian package description and installed README aligned
