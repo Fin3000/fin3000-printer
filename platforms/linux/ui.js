@@ -115,7 +115,7 @@ export class PrinterWindow {
             for (const [heading, ...paragraphs] of [
                 ['setupRequired', 'setupExplanation'],
                 ['connectRequired', 'connectExplanation'],
-                ['jobs', 'readyExplanation'],
+                ['jobs', 'readyExplanation', 'confirmNotice'],
                 ['recovery', 'uncertain', 'receiptExplanation'],
                 ['prepareRemoval', 'drainExplanation'],
                 ['installerTitle', 'installerExplanation', 'installerTrust', 'installerUpdates'],
@@ -177,7 +177,7 @@ export class PrinterWindow {
 
     update(input) {
         if (this.failed) return;
-        const state = validateState(input), previous = this.current; this.current = state;
+        const state = validateState(input); this.current = state;
         if (this.dialogs.pending && !this.dialogs.allowed(this.dialogs.pending.operationId)) this.dialogs.cancel();
         if (state.locked) { this.exportRequested = null; this.recoveryNotice.set_visible(false); }
         const status = state.removed ? 'removed' : state.draining ? 'draining' : state.locked ? 'locked' : !state.queueReady ? 'setupRequired' : !state.connected ? 'connectRequired' : 'ready';
@@ -208,7 +208,6 @@ export class PrinterWindow {
             sibling = row.frame;
             this.updateJob(row, job, state);
         }
-        if (state.code === 'CONNECT_AND_REPRINT' && previous?.code !== state.code) this.window.present();
     }
 
     createJob(job) {

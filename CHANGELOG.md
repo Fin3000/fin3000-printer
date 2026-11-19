@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Send one four-second upload notice on Ubuntu. Open print history only when requested.
+
 - Keep the generated Debian package description and installed README aligned
   with the single-action automatic upload flow.
 

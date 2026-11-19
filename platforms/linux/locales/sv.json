@@ -50,7 +50,7 @@
   "original": "Ladda upp originalet i stället",
   "waiting": "Väntar på föregående utskriftsjobb.",
   "confirming": "Bekräfta uppladdningen.",
-  "transferring": "Skickar utskriftskopia …",
+  "transferring": "Skickar data till Fin3000.",
   "uncertain": "Resultatet är ännu okänt. Skriv inte ut igen. Red ut det här ärendet först.",
   "accepted": "Utskriftskopian har tagits emot. Kontroller pågår.",
   "never_accepted": "Det är verifierat att den här utskriftskopian inte godkändes för mottagning. Du kan skriva ut den igen.",

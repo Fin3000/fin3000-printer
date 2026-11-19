@@ -50,7 +50,7 @@
   "original": "Lataa sen sijaan alkuperäinen",
   "waiting": "Odotetaan edellistä tulostustyötä.",
   "confirming": "Vahvista lataus.",
-  "transferring": "Lähetetään tulostekopiota …",
+  "transferring": "Tietoja lähetetään Fin3000:een.",
   "uncertain": "Tulos ei ole vielä tiedossa. Älä tulosta uudelleen. Selvitä ensin tämä tapahtuma.",
   "accepted": "Tulostekopio vastaanotettu. Tarkistukset ovat käynnissä.",
   "never_accepted": "On todennettu, ettei tätä tulostekopiota hyväksytty vastaanotetuksi. Voit tulostaa sen uudelleen.",

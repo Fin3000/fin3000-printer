@@ -22,7 +22,7 @@ const QA_BUILD = false;
 const application = new Gtk.Application({application_id: 'com.fin3000.Printer', flags: Gio.ApplicationFlags.HANDLES_COMMAND_LINE});
 let view, process, output, writing = false, queuedBytes = 0, stopped = false, updating = false, exited = false;
 const queue = [];
-let previousJobs = new Map();
+let previousJobs, previousCode, sendingTimer = 0;
 const encoder = new TextEncoder(), decoder = new TextDecoder('utf-8', {fatal: true});
 
 function fatal(code) {
@@ -70,34 +70,47 @@ function browser(message) {
     } catch { reply(); }
 }
 
+function notify(id, key) {
+    const message = new Gio.Notification();
+    message.set_title(view.t('title'));
+    message.set_body(view.t(key));
+    application.send_notification(id, message);
+}
+
+function notifySending() {
+    const id = 'fin3000-print-sending';
+    if (sendingTimer) GLib.source_remove(sendingTimer);
+    notify(id, 'transferring');
+    sendingTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 4000, () => {
+        sendingTimer = 0;
+        application.withdraw_notification(id);
+        return GLib.SOURCE_REMOVE;
+    });
+}
+
 function notifyTransitions(state) {
     const current = new Map(state.jobs.map(job => [job.operationId, job]));
-    for (const job of state.jobs) {
-        const previous = previousJobs.get(job.operationId);
-        let keys = null;
-        if (!previous && ['waiting', 'transferring'].includes(job.outcome)) {
-            keys = ['title', 'transferring'];
-        } else if (previous && previous.outcome !== job.outcome && job.outcome === 'accepted') {
-            keys = ['title', 'accepted'];
-        } else if (previous && previous.outcome !== job.outcome && job.outcome === 'never_accepted') {
-            keys = ['title', 'never_accepted'];
-        } else if ((!previous || previous.outcome !== job.outcome) && job.outcome === 'uncertain') {
-            keys = ['title', 'uncertain'];
-        } else if ((!previous || previous.code !== job.code) &&
-            ['REPRINT_AFTER_RESTART', 'REPRINT_AFTER_RECOVERY'].includes(job.code)) {
-            keys = ['title', 'reprint'];
+    if (previousJobs) {
+        if (state.code === 'CONNECT_AND_REPRINT' && previousCode !== state.code)
+            notify('fin3000-print-connection', 'reprint');
+        else if (previousCode === 'CONNECT_AND_REPRINT' && state.code !== previousCode)
+            application.withdraw_notification('fin3000-print-connection');
+        for (const job of state.jobs) {
+            const previous = previousJobs.get(job.operationId);
+            const id = `fin3000-print-${job.operationId}`;
+            if (job.outcome === previous?.outcome && job.code === previous?.code) continue;
+            if (['never_accepted', 'uncertain'].includes(job.outcome)) notify(id, job.outcome);
+            else if (['REPRINT_AFTER_RESTART', 'REPRINT_AFTER_RECOVERY'].includes(job.code)) notify(id, 'reprint');
+            else if (previous?.outcome === 'uncertain') application.withdraw_notification(id);
         }
-        if (!keys) continue;
-        const notification = new Gio.Notification();
-        notification.set_title(view.t(keys[0]));
-        notification.set_body(view.t(keys[1]));
-        application.send_notification(`fin3000-print-${job.operationId}`, notification);
     }
+    previousCode = state.code;
     previousJobs = current;
 }
 
 function receive(message) {
     if (message?.type === 'state') { view.update(message); notifyTransitions(message); }
+    else if (message?.type === 'sending') notifySending();
     else if (message?.type === 'release') view.setRelease(message);
     else if (message?.type === 'fatal') view.fatal(message.code);
     else if (message?.type === 'browser') browser(message);
@@ -198,6 +211,10 @@ application.connect('command-line', (_app, command) => {
 application.connect('activate', () => view.window.present());
 application.connect('shutdown', () => {
     stopped = true;
+    if (sendingTimer) {
+        GLib.source_remove(sendingTimer);
+        application.withdraw_notification('fin3000-print-sending');
+    }
     view?.dialogs.cancel();
     for (const bytes of queue) bytes.fill(0);
     try { output?.close(null); } catch { /* Parent EOF also shuts down coordinator/ingress. */ }

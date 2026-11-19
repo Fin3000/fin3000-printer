@@ -50,7 +50,7 @@
   "original": "Încarcă originalul în schimb",
   "waiting": "Se așteaptă lucrarea de imprimare anterioară.",
   "confirming": "Confirmă încărcarea.",
-  "transferring": "Se trimite copia de imprimare …",
+  "transferring": "Se trimit date către Fin3000.",
   "uncertain": "Rezultatul nu este încă cunoscut. Nu imprima din nou. Clarifică mai întâi această operațiune.",
   "accepted": "Copie de imprimare primită. Verificări în curs.",
   "never_accepted": "S-a verificat că această copie de imprimare nu a fost acceptată. O poți imprima din nou.",

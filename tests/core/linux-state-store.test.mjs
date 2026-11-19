@@ -98,7 +98,7 @@ test('drained coordinator releases its real Linux lease with recovery durable an
   await agent.start(); await agent.connect(account);
   const job = await agent.admit({ generation: randomUUID(), nativeJobUuid: randomUUID() },
     'Synthetic', Buffer.from('%PDF-synthetic'));
-  t.after(async () => { finishNetwork('accepted'); await agent.drain(); });
+  t.after(() => finishNetwork('accepted'));
   // The real fsync path need not finish in one event-loop turn.
   for (let step = 0; step < 100 && !signal; step++) await new Promise(resolve => setTimeout(resolve, 10));
   assert.ok(signal, 'the transfer must have reached the network boundary');
@@ -249,7 +249,11 @@ test('a compatible older build reads the latest state rather than its earlier ch
     transfer: { async send() { return 'accepted'; }, async reconcile() { return 'accepted'; } } });
   await agent.start(); await agent.connect(account);
   const job = await agent.admit({ generation: randomUUID(), nativeJobUuid: randomUUID() }, 'Synthetic', Buffer.from('%PDF-synthetic'));
-  await agent.confirm(job.operationId); await agent.drain(); await next.close();
+  for (let step = 0; step < 200 && agent.snapshot()[0]?.outcome !== 'accepted'; step++) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  assert.equal(agent.snapshot()[0]?.outcome, 'accepted');
+  await agent.drain(); await next.close();
   const rollback = await LinuxStateStore.acquire(f.path, release); t.after(() => rollback.close());
   const latest = await rollback.load();
   assert.equal(latest.jobs[0].operationId, job.operationId); assert.equal(latest.jobs[0].outcome, 'accepted');

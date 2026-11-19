@@ -50,7 +50,7 @@
   "original": "Carica invece l’originale",
   "waiting": "In attesa del lavoro di stampa precedente.",
   "confirming": "Conferma il caricamento.",
-  "transferring": "Invio della copia di stampa …",
+  "transferring": "Invio dei dati a Fin3000.",
   "uncertain": "L’esito è ancora sconosciuto. Non stampare di nuovo. Chiarisci prima questa operazione.",
   "accepted": "Copia di stampa ricevuta. Verifiche in corso.",
   "never_accepted": "È verificato che questa copia di stampa non è stata accettata. Puoi stamparla di nuovo.",

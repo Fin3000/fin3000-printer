@@ -134,7 +134,9 @@ test('restore rechecks current principal and refuses a changed owner or target',
   await assert.rejects(restarted.agent.restore(signal()), { code: 'PRINCIPAL_CHANGED' });
   await assert.rejects(restarted.agent.access(signal()), { code: 'LOGIN_REQUIRED' });
   restarted.principal.target = original.principal.target;
-  assert.deepEqual(await restarted.agent.restore(signal()), JSON.parse(original.secret()).binding);
+  const { accountName, ...binding } = await restarted.agent.restore(signal());
+  assert.equal(accountName, restarted.principal.accountName);
+  assert.deepEqual(binding, JSON.parse(original.secret()).binding);
 });
 
 test('session locking stops access, including a refresh that was already in flight', async () => {

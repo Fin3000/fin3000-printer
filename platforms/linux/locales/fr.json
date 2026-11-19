@@ -50,7 +50,7 @@
   "original": "Envoyer plutôt l’original",
   "waiting": "En attente du travail d’impression précédent.",
   "confirming": "Veuillez confirmer l’envoi.",
-  "transferring": "Envoi de la copie imprimée …",
+  "transferring": "Envoi des données à Fin3000.",
   "uncertain": "Le résultat est encore inconnu. Ne relancez pas l’impression. Résolvez d’abord cette opération.",
   "accepted": "Copie imprimée reçue. Vérifications en cours.",
   "never_accepted": "Il est confirmé que cette copie imprimée n’a pas été acceptée. Vous pouvez l’imprimer à nouveau.",

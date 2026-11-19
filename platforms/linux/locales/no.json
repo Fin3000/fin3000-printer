@@ -50,7 +50,7 @@
   "original": "Last opp originalen i stedet",
   "waiting": "Venter på den forrige utskriftsjobben.",
   "confirming": "Bekreft opplastingen.",
-  "transferring": "Sender utskriftskopi …",
+  "transferring": "Sender data til Fin3000.",
   "uncertain": "Resultatet er ennå ukjent. Ikke skriv ut på nytt. Avklar denne operasjonen først.",
   "accepted": "Utskriftskopi mottatt. Kontroller pågår.",
   "never_accepted": "Det er verifisert at denne utskriftskopien ikke ble tatt imot. Du kan skrive den ut på nytt.",

@@ -50,7 +50,7 @@
   "original": "Inkább az eredeti feltöltése",
   "waiting": "Várakozás az előző nyomtatási feladatra.",
   "confirming": "Erősítse meg a feltöltést.",
-  "transferring": "Nyomtatási másolat küldése …",
+  "transferring": "Adatok küldése a Fin3000 rendszerbe.",
   "uncertain": "Az eredmény még nem ismert. Ne nyomtasson újra. Először tisztázza ezt a műveletet.",
   "accepted": "A nyomtatási másolat beérkezett. Az ellenőrzések folyamatban vannak.",
   "never_accepted": "Igazoltan nem került elfogadásra ez a nyomtatási másolat. Újra kinyomtathatja.",

@@ -50,7 +50,7 @@
   "original": "Upload the original instead",
   "waiting": "Waiting for the previous print job.",
   "confirming": "Please confirm the upload.",
-  "transferring": "Sending print copy …",
+  "transferring": "Sending data to Fin3000.",
   "uncertain": "The outcome is not yet known. Do not print again. Resolve this operation first.",
   "accepted": "Print copy received. Checks are running.",
   "never_accepted": "This print copy was verifiably not accepted. You may print it again.",

@@ -47,6 +47,9 @@ const loop = GLib.MainLoop.new(null, false);
 let failed = false;
 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
     try {
+        view.update({...state, connected: false, accountName: null, code: 'CONNECT_AND_REPRINT'});
+        assert(!view.window.get_visible() && view.error.get_visible(), 'connection failure stays in manual history without opening a window');
+        view.update(state);
         const row = view.rows.get(id);
         assert(view.accountInfo.get_label() === 'Fin3000 · Synthetic account', 'connected account is visible separately from target');
         assert(row.name.get_label() === job.name && !row.name.get_use_markup(), 'job title must be plain text');
@@ -123,7 +126,7 @@ GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
             texts.some(text => text.includes('structured e-invoice')) &&
             !texts.some(text => text.includes(id) || text.includes(job.name) || text.includes(job.target)),
         'bundled help explains uncertainty and print-copy limits without exposing job or account data');
-        print(JSON.stringify({ok: true, realGtk: true, cases: 33, uploads: 0, hostPrinters: 0}));
+        print(JSON.stringify({ok: true, realGtk: true, cases: 34, uploads: 0, hostPrinters: 0}));
     } catch (error) {
         failed = true; printerr(error.message);
     } finally { view.window.destroy(); loop.quit(); }
