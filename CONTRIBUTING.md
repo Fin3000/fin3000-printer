@@ -6,7 +6,7 @@ user workflow.
 
 ## Development setup
 
-Use Ubuntu with Node.js 22.18 or newer, including TypeScript execution support,
+For Linux development, use Ubuntu with Node.js 22.18 or newer, including TypeScript execution support,
 and Python 3.11 or newer. Native checks also use the operating system's GJS
 and GTK 4, libsecret, CUPS, AppArmor and build tools. The core process tests
 expect the Ubuntu GJS executable layout.
@@ -39,6 +39,11 @@ These checks do not install a product or prove that printing works on a native
 desktop. Additional checks are available for Linux ingress, setup, native
 backends, GTK presentation, package lifecycle and release verification. See
 [Building](docs/BUILDING.md) for dependencies and commands.
+
+For macOS development, use a Mac with Apple Silicon, macOS 26 and the Xcode
+command-line tools. Install the pinned dependencies with `npm ci` and run
+`python3 -m unittest discover -s tests -p test_macos.py`. The README describes
+how to build the isolated QA installer. [macOS build instructions](README.md#macos-26-on-apple-silicon)
 
 ## Safe native testing
 
