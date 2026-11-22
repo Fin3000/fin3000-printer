@@ -40,6 +40,9 @@ assert info.get('identifier')=='com.fin3000.printer.installer' and info.get('ver
 PY
 payload="$stage/expanded/payload.pkg/Payload"
 app="$payload/Applications/Fin3000 Drucker.app"
+for file in NODE-LICENSE NODE-SOURCE-NOTICES vendor-source/smartstring-1.0.1.crate; do
+  test -s "$app/Contents/Resources/licenses/$file"
+done
 for component in "$app" "$app/Contents/Resources/node" "$payload/Library/Printers/Fin3000/pdf-filter" "$payload/Library/Printers/Fin3000/relay"; do
   codesign --verify --strict "$component"
   codesign -dv --verbose=4 "$component" 2>"$stage/component"

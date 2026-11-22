@@ -2,7 +2,7 @@
 """Build an Apple Silicon installer on macOS from the pinned runtime and this checkout."""
 
 import argparse
-import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import platform
@@ -10,13 +10,17 @@ import plistlib
 import re
 import shutil
 import subprocess
-import tarfile
+import sys
 import tempfile
 from xml.etree import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 MAC = ROOT / "platforms/macos"
-ARCHIVE = "node-v22.23.2-darwin-arm64.tar.xz"
+spec = importlib.util.spec_from_file_location("node_runtime", ROOT / "scripts/verify-node-runtime.py")
+vendor = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = vendor
+spec.loader.exec_module(vendor)
+ARCHIVE = f"node-v{vendor.PINNED.version}-darwin-arm64.tar.xz"
 DIGEST = "5eff7a9011895aae3f29d06f167b84a62b028a591370c7cafb59103559fd26e1"
 
 
@@ -30,13 +34,19 @@ def put(path, content, mode=0o644):
     path.chmod(mode)
 
 
-def digest(path):
-    with path.open("rb") as stream:
-        return (
-            hashlib.file_digest(stream, "sha256").hexdigest()
-            if hasattr(hashlib, "file_digest")
-            else hashlib.sha256(stream.read()).hexdigest()
-        )
+def install_runtime(archive_path, resources):
+    if archive_path.name != ARCHIVE:
+        raise ValueError("Wrong Node archive name.")
+    _, digest, archive = vendor.common.regular_file(archive_path, vendor.MAX_ARCHIVE, contents=True)
+    if digest != DIGEST:
+        raise ValueError("Wrong Node archive SHA-256.")
+    node, license_text = vendor.archive_payload(archive, ARCHIVE.removesuffix(".tar.xz"), platform="darwin-arm64")
+    material = vendor.verify_source_material(archive_path.parent, license_text)
+    licenses = resources / "licenses"
+    put(resources / "node", node, 0o755)
+    put(licenses / "NODE-LICENSE", license_text)
+    put(licenses / "NODE-SOURCE-NOTICES", material.notices)
+    put(licenses / vendor.SUPPLEMENT_SOURCE, material.supplement.source)
 
 
 def build(args):
@@ -77,8 +87,6 @@ def build(args):
         ]
     ):
         raise ValueError("QA is confined to loopback.")
-    if args.archive.name != ARCHIVE or digest(args.archive) != DIGEST:
-        raise ValueError("Wrong Node archive or SHA-256.")
     version = json.loads((ROOT / "package.json").read_text())["version"]
     vendor = "Fin3000QA" if qa else "Fin3000"
     service = "com.fin3000.printer" + (".qa" if qa else "")
@@ -87,8 +95,7 @@ def build(args):
     output = args.output.resolve()
     if output.exists() or not output.parent.is_dir():
         raise ValueError("Use a new output directory under an existing parent.")
-    output.mkdir()
-    with tempfile.TemporaryDirectory(prefix="mac-print-build-", dir=output) as temp:
+    with tempfile.TemporaryDirectory(prefix="mac-print-build-", dir=output.parent) as temp:
         work = Path(temp)
         payload = work / "root"
         app = payload / "Applications" / (name + ".app")
@@ -100,29 +107,9 @@ def build(args):
             d.mkdir(parents=True)
             d.chmod(0o755)
         node = res / "node"
-        prefix = ARCHIVE.removesuffix(".tar.xz") + "/"
-        with tarfile.open(args.archive, "r:xz") as archive:
-            for src, dest in [
-                ("bin/node", node),
-                ("LICENSE", res / "licenses/NODE-LICENSE"),
-            ]:
-                file = archive.getmember(prefix + src)
-                if not file.isfile():
-                    raise ValueError("Invalid Node archive")
-                put(
-                    dest,
-                    archive.extractfile(file).read(),
-                    0o755 if dest == node else 0o644,
-                )
+        install_runtime(args.archive, res)
         for f in ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]:
             shutil.copyfile(ROOT / f, res / "licenses" / f)
-        # Persist the full bundled dependency notices carried by the shared runtime inventory.
-        notices = json.loads(
-            (ROOT / "signing/node-runtime-supplement.json").read_text()
-        )
-        for key, value in notices.items():
-            if isinstance(value, str) and len(value) > 10000:
-                put(res / "licenses" / (key + ".txt"), value)
         run(
             node,
             ROOT / "node_modules/typescript/bin/tsc",
@@ -321,8 +308,10 @@ fi
             "--package-path",
             work,
             *([] if qa else ["--sign", args.installer_identity, "--timestamp"]),
-            target,
+            work / target.name,
         )
+        output.mkdir()
+        (work / target.name).rename(target)
     print(target)
 
 

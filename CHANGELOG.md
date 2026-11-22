@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - Add a macOS 26 Apple Silicon system printer, with per-user queue, macOS Keychain, manual history, and separate QA and notarized release packaging.
+- Include verified Node source notices and the original SmartString source in both macOS installer profiles.
 
 - Send one four-second upload notice on Ubuntu. Open print history only when requested.
 
