@@ -77,14 +77,22 @@ async function main(): Promise<void> {
   emit({ type: 'release', version: release.version, sourceCommit: release.sourceCommit });
   const http = new NativeHttp(config);
   const oauth = new NativeOAuth({ config, http, secrets: new LinuxSecretStore(config.environment), browser: { open: openBrowser }, clock });
-  const agent = new Coordinator({ store, transfer: new NativeTransfer(http, oauth), verifier, clock });
+  const transfer = new NativeTransfer(http, oauth);
+  const agent = new Coordinator({ store, verifier, clock, transfer: {
+    send(...args) {
+      emit({ type: 'sending' });
+      return transfer.send(...args);
+    },
+    reconcile: transfer.reconcile.bind(transfer),
+  } });
   const native = new LinuxNative({ admit: (...args) => desktop!.admit(...args) }, () => {
     if (!closing) void desktop?.nativeUnavailable().catch(() => {});
   });
   desktop = new DesktopController({ agent, auth: oauth, native, emit, now: clock.now,
     exportRecovery: (operationId, content) => emit({ type: 'recoveryExport', operationId, content }),
-    open: destination => openBrowser(new URL(destination === 'original' ? '/accounting/incoming-invoices/upload'
-      : '/accounting/incoming-invoices/print-operations', config.appOrigin).href) });
+    open: () => openBrowser(new URL(
+      '/accounting/incoming-invoices/print-operations', config.appOrigin,
+    ).href) });
   await desktop.start();
   let ticking = false;
   const timer = setInterval(() => {

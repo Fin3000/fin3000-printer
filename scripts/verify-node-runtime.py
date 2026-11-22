@@ -86,6 +86,14 @@ class VerifiedSupplement:
     source_sha256: str
 
 
+@dataclass(frozen=True)
+class VerifiedSourceMaterial:
+    notices: bytes
+    notice_count: int
+    archive_size: int
+    supplement: VerifiedSupplement
+
+
 def certificate_valid(listing, policy, now):
     """Node signs this release with the RSA primary, not our release subkey."""
     records = [line.split(":") for line in listing.splitlines()]
@@ -159,7 +167,7 @@ def checksum_matches(checksums, filename, digest):
     require(entries.get(filename) == digest, "Archive is not bound by signed checksums")
 
 
-def archive_payload(archive, prefix):
+def archive_payload(archive, prefix, *, platform="linux-x64"):
     """Read two exact regular members. Never extract archive paths or npm links."""
     wanted = {f"{prefix}/bin/node": 150 * 1024 * 1024, f"{prefix}/LICENSE": 4 * 1024 * 1024}
     found, names, expanded = {}, set(), 0
@@ -183,7 +191,11 @@ def archive_payload(archive, prefix):
             found[name] = data
     require(set(found) == set(wanted), "Runtime archive lacks binary or license")
     node, license_text = found[f"{prefix}/bin/node"], found[f"{prefix}/LICENSE"]
-    require(node[:6] == b"\x7fELF\x02\x01" and node[18:20] == b"\x3e\x00", "Runtime is not Linux ELF64 x86-64")
+    if platform == "darwin-arm64":
+        require(node[:8] == b"\xcf\xfa\xed\xfe\x0c\x00\x00\x01", "Runtime is not macOS Mach-O arm64")
+    else:
+        require(platform == "linux-x64" and node[:6] == b"\x7fELF\x02\x01" and node[18:20] == b"\x3e\x00",
+                "Runtime is not Linux ELF64 x86-64")
     require("Node.js" in license_text.decode("utf-8") and b"MIT" in license_text, "Invalid vendor license text")
     return node, license_text
 
@@ -287,6 +299,22 @@ def supplement_payload(raw, policy):
     return VerifiedSupplement(notices, count, source, digest)
 
 
+def verify_source_material(directory, license_text, *, supplement=SUPPLEMENT, policy=PINNED):
+    """Collect the pinned source notices and corresponding source shared by both packages."""
+    source_name = f"node-v{policy.version}.tar.xz"
+    source_size, source_digest, source_archive = common.regular_file(directory / source_name, MAX_ARCHIVE, contents=True)
+    require(source_digest == policy.source_sha256, "Source archive digest is not pinned")
+    _, supplement_digest, supplement_raw = common.regular_file(supplement, 2 * 1024 * 1024, contents=True)
+    require(supplement_digest == policy.supplement_sha256, "Supplement digest is not pinned")
+    extra = supplement_payload(supplement_raw, policy)
+    notices, count = source_notices(source_archive, f"node-v{policy.version}", license_text)
+    notices += ("\nSupplementary embedded Rust notices (separately pinned, not Node-signed).\n"
+                f"Original SmartString 1.0.1 source is installed beside this file at {SUPPLEMENT_SOURCE}.\n"
+                "This observed subset is not a complete SBOM or release approval.\n").encode() + extra.notices
+    require(len(notices) <= MAX_NOTICES, "Combined source notices exceed bounds")
+    return VerifiedSourceMaterial(notices, count, source_size, extra)
+
+
 def verify_runtime(directory, *, certificate=CERTIFICATE, supplement=SUPPLEMENT, policy=PINNED, now=None):
     now = int(time.time()) if now is None else now
     directory = Path(directory)
@@ -297,28 +325,19 @@ def verify_runtime(directory, *, certificate=CERTIFICATE, supplement=SUPPLEMENT,
     _, cert_digest, cert = common.regular_file(certificate, 256 * 1024, contents=True)
     signed_at = verify_signature(sums, sig, cert, policy, now)
     checksum_matches(sums, filename, policy.archive_sha256)
-    size, digest, archive = common.regular_file(directory / filename, MAX_ARCHIVE, contents=True)
-    require(digest == policy.archive_sha256, "Runtime archive digest is not pinned")
     source_name = f"node-v{policy.version}.tar.xz"
     checksum_matches(sums, source_name, policy.source_sha256)
-    source_size, source_digest, source_archive = common.regular_file(directory / source_name, MAX_ARCHIVE, contents=True)
-    require(source_digest == policy.source_sha256, "Source archive digest is not pinned")
-    _, supplement_digest, supplement_raw = common.regular_file(supplement, 2 * 1024 * 1024, contents=True)
-    require(supplement_digest == policy.supplement_sha256, "Supplement digest is not pinned")
-    extra = supplement_payload(supplement_raw, policy)
-    # Only authenticated, hash-pinned bytes reach the archive parser.
+    size, digest, archive = common.regular_file(directory / filename, MAX_ARCHIVE, contents=True)
+    require(digest == policy.archive_sha256, "Runtime archive digest is not pinned")
     node, license_text = archive_payload(archive, prefix)
-    notices, count = source_notices(source_archive, f"node-v{policy.version}", license_text)
-    notices += ("\nSupplementary embedded Rust notices (separately pinned, not Node-signed).\n"
-                f"Original SmartString 1.0.1 source is installed beside this file at {SUPPLEMENT_SOURCE}.\n"
-                "This observed subset is not a complete SBOM or release approval.\n").encode() + extra.notices
-    require(len(notices) <= MAX_NOTICES, "Combined source notices exceed bounds")
+    material = verify_source_material(directory, license_text, supplement=supplement, policy=policy)
     proof = RuntimeProvenance("node", policy.version, filename, digest, size,
                               hashlib.sha256(node).hexdigest(), hashlib.sha256(license_text).hexdigest(),
                               sums_digest, sig_digest, cert_digest, policy.primary, signed_at,
-                              source_name, source_digest, source_size, hashlib.sha256(notices).hexdigest(), count,
-                              supplement_digest, extra.count, extra.source_sha256)
-    return VerifiedRuntime(node, license_text, proof, notices, extra.source)
+                              source_name, policy.source_sha256, material.archive_size,
+                              hashlib.sha256(material.notices).hexdigest(), material.notice_count,
+                              policy.supplement_sha256, material.supplement.count, material.supplement.source_sha256)
+    return VerifiedRuntime(node, license_text, proof, material.notices, material.supplement.source)
 
 
 def main():

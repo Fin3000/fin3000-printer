@@ -1,5 +1,5 @@
 [Unit]
-Description=Fin3000 Printer desktop confirmation and status
+Description=Fin3000 Printer upload and status
 PartOf=graphical-session.target
 # GNOME publishes WAYLAND_DISPLAY only after its shell is ready. The generic
 # pre-session target alone races GTK startup on the supported Ubuntu desktop.

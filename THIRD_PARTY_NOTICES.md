@@ -50,3 +50,12 @@ Before an official binary release, the full dependency and license inventory,
 required source distribution, security findings and native installation checks
 must be reconciled. Adding the project's Apache license does not close those
 release gates. See [README.md](README.md) and [signing/README.md](signing/README.md).
+
+## macOS packages
+
+The QA and production installers place the project license, `NOTICE` and this
+document under `Contents/Resources/licenses/` inside the installed printer app.
+That directory also contains the original `NODE-LICENSE`, the combined
+`NODE-SOURCE-NOTICES` and the unchanged `vendor-source/smartstring-1.0.1.crate`.
+The builder verifies the pinned Apple Silicon binary archive, the matching
+Node source archive and the supplementary material before signing the app.

@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+- Add a macOS 26 Apple Silicon system printer, with per-user queue, macOS Keychain, manual history, and separate QA and notarized release packaging.
+- Include verified Node source notices and the original SmartString source in both macOS installer profiles.
+
+- Send one four-second upload notice on Ubuntu. Open print history only when requested.
+
+- Keep the generated Debian package description and installed README aligned
+  with the single-action automatic upload flow.
+
+## [0.1.1] - 2026-09-30
+
+- Upload a print copy automatically after the operating system print action,
+  removing the redundant desktop confirmation. Persist admissions before
+  transfer, serialize uploads, cap active work, and preserve explicit
+  uncertain-result recovery without automatic resending.
+- Show account and destination before printing, retain cancellability only for
+  queued jobs, and document the single-action privacy and recovery behavior.
+
 - Add a German project page with Fin3000 branding, product-specific search
   metadata, installation guidance and links to Fin3000.com. Include a
   self-contained Tailwind documentation build and branded README navigation.

@@ -3,8 +3,8 @@
 - Keep the desktop client, installer and their checks self-contained in this repository.
 - Work on a feature branch and submit changes through reviewed pull requests.
 - Run the relevant checks in CONTRIBUTING.md before pushing; update CHANGELOG.md.
-- V1 targets Ubuntu 24.04/26.04 LTS, GNOME/Wayland, amd64. Windows and macOS are future milestones.
-- Preserve per-upload confirmation, owner binding, receipt verification and recovery without automatic resending.
+- The Linux target is Ubuntu 24.04/26.04 LTS on GNOME/Wayland, amd64. The macOS installer is tested on macOS 26 with Apple Silicon. Public Mac packages require Developer ID signing and notarization. Windows is planned.
+- Preserve single-action automatic upload, owner binding, receipt verification and recovery without automatic resending.
 - Native tests use authorized disposable systems and synthetic PDFs only.
 - Never bypass normal administrator authentication, weaken AppArmor or alter unrelated printers.
 - Do not include credentials, invoices, private signing keys or local reports in Git or artifacts.

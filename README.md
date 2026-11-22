@@ -10,9 +10,10 @@
 · [Tools & Downloads](https://fin3000.com/tools/)
 · [Project page](https://fin3000.github.io/fin3000-printer/)
 
-Send a PDF print copy to your Fin3000 invoice inbox from an application's print
-dialog. Fin3000 Drucker adds **An Fin3000 senden (Cloud-Upload)** as a print
-destination and asks you to confirm each upload in its desktop window.
+Send a PDF print copy to Fin3000 from an application's print dialog. Fin3000
+Drucker adds **An Fin3000 senden (Cloud-Upload)** as a print destination. Once
+you select it and press the operating system's print button, the copy is queued
+and uploaded automatically; there is no second send button.
 
 The source project is called `fin3000-printer` and is licensed under
 [Apache-2.0](LICENSE).
@@ -20,12 +21,12 @@ The source project is called `fin3000-printer` and is licensed under
 ## Availability and installation
 
 The first Linux release is being prepared. **There is no signed public
-installer or production-supported release yet.** Version `0.1.0` currently
+installer or production-supported release yet.** Version `0.1.2` currently
 identifies an unreleased candidate. Do not install unsigned candidates on a
 production workstation or use them with real invoices.
 
 The initial target is Ubuntu 24.04 and 26.04 LTS on Intel/AMD 64-bit computers,
-using GNOME/Wayland. Windows and macOS versions are planned, not available.
+using GNOME/Wayland. A separate macOS installer is available for local QA on macOS 26 with Apple Silicon. The Windows version is planned.
 Other Linux distributions and desktops are not currently supported targets.
 
 When a signed release is available, use the installer and verification
@@ -34,6 +35,14 @@ application uses Ubuntu's package manager; printer setup asks for normal
 administrator authentication. End users do not need to install Node.js.
 A source checkout is not an installer. See [Building](docs/BUILDING.md) if you
 want to work on development packages.
+
+## macOS 26 on Apple Silicon
+
+Open Fin3000 Drucker in Applications after installing the package. Connect your Fin3000 account in the browser, choose a destination and authorize the per-user print queue. Choose **An Fin3000 senden (Cloud-Upload)** in the system print dialog. Open the app to view recent jobs or check an uncertain result. Remove the destination from the app before uninstalling it. The installer does not select a new default printer.
+
+On a Mac with Xcode command-line tools, run `npm ci` and `python3 -m unittest discover -s tests -p test_macos.py`. Place the official Node.js 22.23.2 binary archive `node-v22.23.2-darwin-arm64.tar.xz` and source archive `node-v22.23.2.tar.xz` in the same directory. The builder verifies both SHA-256 pins and includes the upstream notices and SmartString source in the app. Build an isolated installer with `python3 scripts/build-macos.py --profile qa --archive /path/to/node-v22.23.2-darwin-arm64.tar.xz --config /path/to/qa-config.json --qa-ca /path/to/qa-ca.crt --output /path/to/new-build`. The QA configuration uses the shared build configuration schema, loopback origins and the QA server’s public receipt key.
+
+For a production build pass `--profile production --team TEAM --app-identity APPLICATION_ID --installer-identity INSTALLER_ID` in place of the QA options. The release script verifies the app, runtime, relay, filter and installer, submits the package to Apple, staples the accepted ticket and checks Gatekeeper before publishing the final hash. Run `scripts/verify-macos-release.sh` without arguments for its inputs. Only a tested, notarized production package qualifies for the public download.
 
 ## How printing works
 
@@ -50,9 +59,8 @@ are not yet offered as a supported public service.
    Firefox may display the queue identifier `Fin3000-…` instead of its label.
    In Chromium-based browsers, open the system print dialog with
    **Ctrl+Shift+P**.
-4. Check the destination and print-copy details in the desktop window, then
-   choose **Send print copy to Fin3000**. Choose **Cancel** if you do not want
-   to upload it. Each copy needs its own confirmation.
+4. The app queues and uploads the print copy automatically. While a copy is
+   still waiting behind another upload, you can cancel it in the desktop app.
 5. Check the result in the app. An accepted copy has reached Fin3000; further
    document processing may still be running.
 
@@ -62,14 +70,16 @@ data. The printer accepts PDF print copies up to 20 MiB.
 
 ## Privacy and interrupted uploads
 
-Printing to this destination is a cloud upload, not a paper printout. The app
-shows where the copy will go before you send it. Login credentials use the
-desktop's secure keyring. A locked or unavailable keyring prevents the app
-from becoming ready.
+Printing to this destination is a cloud upload, not a paper printout. Selecting
+the destination and pressing the operating system's print button starts that
+upload. The app shows the connected account and destination before printing.
+Login credentials use the desktop's secure keyring. A locked or unavailable
+keyring prevents the app from becoming ready.
 
-Unconfirmed copies are not automatically sent after you unlock your desktop.
-If a result is uncertain, **check its status before printing again**. Recovery
-checks the existing operation; it does not resend the PDF. The app can save
+Jobs that cannot safely start after a restart or locked session are cancelled
+and must be printed again. If a result is uncertain, **check its status before
+printing again**. Recovery checks the existing operation; it does not resend
+the PDF. The app can save
 an unresolved-status file containing technical operation identifiers, not the
 invoice or login credentials. Keep that file private: it is a recovery aid,
 not proof that a document was received.

@@ -1,10 +1,10 @@
 {
   "name": "fin3000-printer",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
-  "description": "Send confirmed PDF print copies to Fin3000.com from Linux applications",
+  "description": "Send PDF print copies to Fin3000.com from Ubuntu and macOS applications",
   "engines": {
     "node": ">=22.18.0"
   },
