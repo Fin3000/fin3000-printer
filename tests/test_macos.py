@@ -17,6 +17,40 @@ spec = importlib.util.spec_from_file_location("mac_builder", ROOT / "scripts/bui
 builder = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(builder)
 
+spec = importlib.util.spec_from_file_location("mac_signer", ROOT / "scripts/macos_installer_fingerprint.py")
+signer = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(signer)
+
+
+class MacInstallerSignatureTests(unittest.TestCase):
+    team = "A123456789"
+    octets = [f"{value:02X}" for value in range(32)]
+
+    def report(self, leaf):
+        return (
+            "   Certificate Chain:\n"
+            f"    1. Developer ID Installer: Example GmbH ({self.team})\n"
+            f"       Expires: 2027-12-22 19:39:44 +0000\n{leaf}"
+            "    2. Developer ID Certification Authority\n"
+            "       SHA256 Fingerprint:\n           " + " FF" * 32 + "\n"
+        )
+
+    def test_leaf_fingerprint_spans_two_lines(self):
+        leaf = "       SHA256 Fingerprint:\n           " + " ".join(self.octets[:22]) + " \n"
+        leaf += "           " + " ".join(self.octets[22:]) + "\n       " + "-" * 72 + "\n"
+        self.assertEqual(signer.installer_fingerprint(self.report(leaf), self.team), bytes(range(32)).hex())
+
+    def test_issuer_cannot_supply_a_missing_or_invalid_leaf_fingerprint(self):
+        for leaf in ["", "11 " * 31, "11 " * 31 + "ZZ", "11 " * 33]:
+            with self.subTest(leaf=leaf), self.assertRaisesRegex(ValueError, "fingerprint"):
+                signer.installer_fingerprint(self.report("       SHA256 Fingerprint:\n" + leaf + "\n"), self.team)
+
+    def test_first_certificate_must_be_an_installer_from_the_requested_team(self):
+        report = self.report("       SHA256 Fingerprint:\n" + "11 " * 32 + "\n")
+        for actual in [report.replace(self.team, "B123456789"), report.replace("ID Installer:", "ID Application:")]:
+            with self.subTest(actual=actual), self.assertRaisesRegex(ValueError, "first certificate"):
+                signer.installer_fingerprint(actual, self.team)
+
 
 class MacRuntimeTests(unittest.TestCase):
     def setUp(self):

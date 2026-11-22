@@ -23,8 +23,9 @@ stage=$(mktemp -d "$root/macos/.verify.XXXXXXXX")
 trap 'rm -rf "$stage"' EXIT
 target="$stage/$name"
 cp "$package" "$target"
-pkgutil --check-signature "$target" > "$stage/signature"
-grep -E 'Developer ID Installer:.*\('"$team"'\)' "$stage/signature" >/dev/null
+fingerprint_tool="$(dirname "$0")/macos_installer_fingerprint.py"
+LC_ALL=C /usr/sbin/pkgutil --check-signature "$target" > "$stage/signature"
+fingerprint=$(/usr/bin/python3 -I "$fingerprint_tool" "$stage/signature" "$team")
 pkgutil --expand-full "$target" "$stage/expanded"
 /usr/bin/python3 -I - "$stage/expanded" "$version" <<'PY'
 from pathlib import Path
@@ -50,20 +51,17 @@ for component in "$app" "$app/Contents/Resources/node" "$payload/Library/Printer
   grep -F 'Authority=Developer ID Application:' "$stage/component" >/dev/null
   grep -E 'flags=.*runtime' "$stage/component" >/dev/null
 done
-mkdir "$stage/certs"
-/usr/bin/xar -f "$target" --extract-certs "$stage/certs"
-cert=$(find "$stage/certs" -name cert00 -type f)
-test -f "$cert"
 xcrun notarytool submit "$target" --keychain-profile "$profile" --wait --output-format json > "$stage/submission.json"
 id=$(/usr/bin/python3 -I -c 'import json,re,sys; v=json.load(open(sys.argv[1])); assert v["status"]=="Accepted" and re.fullmatch(r"[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}",v["id"]); print(v["id"])' "$stage/submission.json")
 xcrun stapler staple "$target"
 xcrun stapler validate "$target"
 spctl --assess --type install --verbose=2 "$target"
-pkgutil --check-signature "$target" >/dev/null
-/usr/bin/python3 -I - "$root/macos" "$stage" "$name" "$team" "$privacy" "$id" "$version" "$cert" <<'PY'
+LC_ALL=C /usr/sbin/pkgutil --check-signature "$target" > "$stage/signature"
+test "$fingerprint" = "$(/usr/bin/python3 -I "$fingerprint_tool" "$stage/signature" "$team")"
+/usr/bin/python3 -I - "$root/macos" "$stage" "$name" "$team" "$privacy" "$id" "$version" "$fingerprint" <<'PY'
 import fcntl,hashlib,json,os,sys
 from pathlib import Path
-root,stage=map(Path,sys.argv[1:3]);name,team,privacy,identifier,version,cert=sys.argv[3:]
+root,stage=map(Path,sys.argv[1:3]);name,team,privacy,identifier,version,fingerprint=sys.argv[3:]
 def digest(p):
  h=hashlib.sha256()
  with p.open('rb') as stream:
@@ -71,7 +69,7 @@ def digest(p):
  return h.hexdigest()
 package=stage/name
 manifest=dict(schemaVersion=1,product='fin3000-printer',channel='production',version=version,platform='macos',architecture='arm64',
- macOSMajor=26,teamId=team,installerCertificateSha256=digest(Path(cert)),notarizationId=identifier,gatekeeper=True,stapled=True,
+ macOSMajor=26,teamId=team,installerCertificateSha256=fingerprint,notarizationId=identifier,gatekeeper=True,stapled=True,
  privacySha256=privacy,filename=name,size=package.stat().st_size,sha256=digest(package))
 generation=stage/'generation';generation.mkdir(mode=0o755)
 os.rename(package,generation/name);(generation/'release.json').write_text(json.dumps(manifest,indent=2)+'\n')

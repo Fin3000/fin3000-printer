@@ -33,5 +33,6 @@ jobs:
           python3 -B -I -m unittest discover -s tests -p test_linux_package.py
           python3 -B -I -m unittest discover -s tests -p test_linux_product_package.py
           python3 -B -I -m unittest discover -s tests -p test_linux_release.py
+          python3 -B -I -m unittest discover -s tests -p test_macos.py
       - name: Whitespace check
         run: git diff --check
