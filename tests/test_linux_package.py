@@ -163,11 +163,11 @@ class PackageTests(unittest.TestCase):
                 build.put(tree, f"usr/share/doc/{package}/NODE-SOURCE-NOTICES", b"notices")
                 build.put(tree, f"usr/share/doc/{package}/{build.vendor.SUPPLEMENT_SOURCE}", b"source")
                 inventory = {"package": package, "sourceCommit": "a" * 40, "builderImage": "sha256:" + "b" * 64,
-                             "runtime": {"version": "22.23.2", "sha256": hashlib.sha256(node).hexdigest(),
+                             "runtime": {"version": "22.23.5", "sha256": hashlib.sha256(node).hexdigest(),
                                          "licenseSha256": hashlib.sha256(license_text).hexdigest(),
                                          "sourceNoticesSha256": hashlib.sha256(b"notices").hexdigest(),
                                          "supplementalSourceSha256": hashlib.sha256(b"source").hexdigest()}}
-                facts = {"platform": "linux", "arch": "x64", "versions": {"node": "22.23.2", "modules": "127", "sqlite": "3.51.3"},
+                facts = {"platform": "linux", "arch": "x64", "versions": {"node": "22.23.5", "modules": "127", "sqlite": "3.51.3"},
                          "variables": {"node_shared_sqlite": False}}
                 with patch.object(build, "command", return_value=subprocess.CompletedProcess([], 0, json.dumps(facts).encode())) as command:
                     build.runtime_component_evidence(directory, tree, inventory, ["synthetic-offline-sandbox"])
@@ -199,9 +199,9 @@ class PackageTests(unittest.TestCase):
                 self.assertFalse((directory / "runtime-components.json").exists())
 
     def test_runtime_evidence_rejects_wrong_architecture_version_or_duplicate_keys(self):
-        valid = {"platform": "linux", "arch": "x64", "versions": {"node": "22.23.2"}, "variables": {}}
+        valid = {"platform": "linux", "arch": "x64", "versions": {"node": "22.23.5"}, "variables": {}}
         invalid = [json.dumps({**valid, "arch": "arm64"}).encode(), json.dumps({**valid, "versions": {"node": "99.0.0"}}).encode(),
-                   b'{"platform":"linux","platform":"linux","arch":"x64","versions":{"node":"22.23.2"},"variables":{}}', b"x" * (128 * 1024 + 1)]
+                   b'{"platform":"linux","platform":"linux","arch":"x64","versions":{"node":"22.23.5"},"variables":{}}', b"x" * (128 * 1024 + 1)]
         for raw in invalid:
             with self.subTest(raw=raw[:100]), tempfile.TemporaryDirectory() as temporary:
                 directory = Path(temporary); tree = directory / "root"
@@ -210,7 +210,7 @@ class PackageTests(unittest.TestCase):
                 build.put(tree, "usr/share/doc/fin3000-printer-qa/NODE-LICENSE", b"license")
                 build.put(tree, "usr/share/doc/fin3000-printer-qa/NODE-SOURCE-NOTICES", b"notices")
                 build.put(tree, f"usr/share/doc/fin3000-printer-qa/{build.vendor.SUPPLEMENT_SOURCE}", b"source")
-                inventory = {"package": "fin3000-printer-qa", "runtime": {"version": "22.23.2", "sha256": hashlib.sha256(b"node").hexdigest(),
+                inventory = {"package": "fin3000-printer-qa", "runtime": {"version": "22.23.5", "sha256": hashlib.sha256(b"node").hexdigest(),
                              "licenseSha256": hashlib.sha256(b"license").hexdigest(),
                              "sourceNoticesSha256": hashlib.sha256(b"notices").hexdigest(),
                              "supplementalSourceSha256": hashlib.sha256(b"source").hexdigest()}}

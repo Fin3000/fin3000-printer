@@ -28,11 +28,11 @@ identifier with a mutable tag.
 ## Authenticate the bundled runtime
 
 The current runtime policy in `scripts/verify-node-runtime.py` pins Node
-22.23.2. Prepare a local directory containing the official upstream inputs:
+22.23.5. Prepare a local directory containing the official upstream inputs:
 
 ```text
-node-v22.23.2-linux-x64.tar.xz
-node-v22.23.2.tar.xz
+node-v22.23.5-linux-x64.tar.xz
+node-v22.23.5.tar.xz
 SHASUMS256.txt
 SHASUMS256.txt.sig
 ```

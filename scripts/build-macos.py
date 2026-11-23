@@ -21,7 +21,7 @@ vendor = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = vendor
 spec.loader.exec_module(vendor)
 ARCHIVE = f"node-v{vendor.PINNED.version}-darwin-arm64.tar.xz"
-DIGEST = "5eff7a9011895aae3f29d06f167b84a62b028a591370c7cafb59103559fd26e1"
+DIGEST = "d0c68c321161bb2c6483efea9a343010dea8e5e7f60d73c6a7eba140016d662f"
 
 
 def run(*args, **kwargs):
