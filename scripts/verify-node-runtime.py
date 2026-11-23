@@ -29,13 +29,12 @@ class NodePolicy:
     version: str
     archive_sha256: str
     primary: str
-    key_bits: int = 4096
-    source_sha256: str = "bbe768df8d5815d7fa76124052985332452e0a4742d39f32027550d1aab8f6fb"
-    supplement_sha256: str = "dfc40608aed9a48b3e8e00a0696ea904a1366299c5fea485ca7e14c9d4fad15f"
+    source_sha256: str = "6cce7c58bf058700c643944903d60a325e8c9ceede1f5c2c088b435f2ada091a"
+    supplement_sha256: str = "2190a3ad82ba9ff2ddf5a18ab92b2a04eab41d49c7b66111faafa2f345a0c500"
 
 
-PINNED = NodePolicy("22.23.2", "d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307",
-                    "CC68F5A3106FF448322E48ED27F5E38D5B0A215F")
+PINNED = NodePolicy("22.23.5", "cdeb8670a0c81f51b4dc4ac61919f9b1ad917b304bf8221eb939570663d240f8",
+                    "5BE8A3F6C8A5C01D106C0AD820B1A390B168D356")
 CERTIFICATE = ROOT / "signing/node-release-key.asc"
 SUPPLEMENT = ROOT / "signing/node-runtime-supplement.json"
 SUPPLEMENT_SOURCE = "vendor-source/smartstring-1.0.1.crate"
@@ -95,17 +94,17 @@ class VerifiedSourceMaterial:
 
 
 def certificate_valid(listing, policy, now):
-    """Node signs this release with the RSA primary, not our release subkey."""
+    """Verify the Ed25519 primary that signed the upstream release."""
     records = [line.split(":") for line in listing.splitlines()]
     public = [fields for fields in records if fields[0] == "pub"]
     require(len(public) == 1 and not any(row[0] in ("sec", "ssb") for row in records),
             "Exactly one public vendor certificate required")
     key = public[0]
-    require(len(key) >= 12 and key[1] not in ("r", "e", "d", "i")
+    require(len(key) > 16 and key[1] not in ("r", "e", "d", "i")
             and "D" not in key[11] and "s" in key[11], "Vendor signing key is not valid")
-    require(key[2] == str(policy.key_bits) and key[3] == "1", "Wrong vendor key algorithm")
-    created, expires = int(key[5]), int(key[6])
-    require(created <= now and now < expires, "Vendor certificate expired or future-dated")
+    require(key[2:4] == ["255", "22"] and key[16] == "ed25519", "Wrong vendor key algorithm")
+    created, expires = int(key[5]), int(key[6]) if key[6] else None
+    require(created <= now and (expires is None or now < expires), "Vendor certificate expired or future-dated")
     index = records.index(key)
     require(index + 1 < len(records) and records[index + 1][0] == "fpr"
             and records[index + 1][9] == policy.primary, "Vendor primary is not pinned")
@@ -123,7 +122,7 @@ def signature_valid(status, policy, now, key_created):
             "Exactly one vendor signature required")
     row = signatures[0]
     require(len(row) == 11 and row[1] == row[10] == policy.primary
-            and row[7] == "1" and row[8] in ("8", "9", "10") and row[9] == "00",
+            and row[7] == "22" and row[8] in ("8", "9", "10") and row[9] == "00",
             "Vendor signer or signature algorithm is not pinned")
     created, expires = int(row[3]), int(row[4])
     require(key_created <= created <= now and (expires == 0 or now < expires),

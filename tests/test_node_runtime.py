@@ -1,4 +1,4 @@
-"""Offline vendor-boundary tests using an ephemeral RSA identity, never prod keys."""
+"""Offline vendor-boundary tests using an ephemeral Ed25519 identity, never prod keys."""
 from dataclasses import replace
 import base64
 import hashlib
@@ -31,7 +31,7 @@ class RuntimeTests(unittest.TestCase):
                             "--kill", "gpg-agent"], check=True, capture_output=True, timeout=10)
         cls.gpg = ["/usr/bin/gpg", "--no-options", "--homedir", cls.keys.name, "--batch",
                    "--pinentry-mode", "loopback", "--passphrase", ""]
-        cls.run_gpg(["--quick-generate-key", "SYNTHETIC VENDOR TEST ONLY", "rsa2048", "sign", "1d"])
+        cls.run_gpg(["--quick-generate-key", "SYNTHETIC VENDOR TEST ONLY", "ed25519", "sign", "1d"])
         cls.listing = cls.run_gpg(["--with-colons", "--list-keys"]).stdout.decode()
         cls.primary = next(row.split(":")[9] for row in cls.listing.splitlines() if row.startswith("fpr:"))
         cls.public = cls.run_gpg(["--armor", "--export", cls.primary]).stdout
@@ -45,7 +45,7 @@ class RuntimeTests(unittest.TestCase):
         self.bundle = tempfile.TemporaryDirectory(prefix="fin3000-test-vendor-bundle-")
         self.addCleanup(self.bundle.cleanup)
         self.root = Path(self.bundle.name)
-        self.prefix = "node-v22.23.2-linux-x64"
+        self.prefix = "node-v22.23.5-linux-x64"
         self.node = b"\x7fELF\x02\x01" + bytes(12) + b"\x3e\x00" + b"NOT EXECUTABLE"
         self.license = b"Node.js MIT license\nSYNTHETIC THIRD PARTY LICENSES\n"
         self.certificate = self.root / "test.asc"
@@ -56,7 +56,7 @@ class RuntimeTests(unittest.TestCase):
         self.source_digest = hashlib.sha256(self.source).hexdigest()
         self.supplement = self.root / "supplement.json"
         synthetic_notice = "\n===== synthetic/LICENSE (SHA256 " + "0" * 64 + ") =====\nSYNTHETIC SUPPLEMENT\n"
-        self.supplement_data = {"schema": 1, "nodeVersion": "22.23.2", "nodeSourceSha256": self.source_digest,
+        self.supplement_data = {"schema": 1, "nodeVersion": "22.23.5", "nodeSourceSha256": self.source_digest,
             "status": "RESOLVED_AND_OBSERVED_SUBSET_NOT_COMPLETE_SBOM_OR_RELEASE_APPROVAL",
             "notices": synthetic_notice, "noticeCount": 1,
             "noticesSha256": hashlib.sha256(synthetic_notice.encode()).hexdigest(),
@@ -64,12 +64,12 @@ class RuntimeTests(unittest.TestCase):
                 "data": base64.b64encode(b"SYNTHETIC SOURCE ONLY").decode(),
                 "sha256": hashlib.sha256(b"SYNTHETIC SOURCE ONLY").hexdigest()}}
         self.supplement.write_text(json.dumps(self.supplement_data))
-        self.policy = vendor.NodePolicy("22.23.2", self.digest, self.primary, 2048, self.source_digest,
+        self.policy = vendor.NodePolicy("22.23.5", self.digest, self.primary, self.source_digest,
                                        hashlib.sha256(self.supplement.read_bytes()).hexdigest())
         (self.root / (self.prefix + ".tar.xz")).write_bytes(self.archive)
-        (self.root / "node-v22.23.2.tar.xz").write_bytes(self.source)
+        (self.root / "node-v22.23.5.tar.xz").write_bytes(self.source)
         self.sign_checksums((f"{self.digest}  {self.prefix}.tar.xz\n"
-                             f"{self.source_digest}  node-v22.23.2.tar.xz\n").encode())
+                             f"{self.source_digest}  node-v22.23.5.tar.xz\n").encode())
 
     def make_archive(self, *, extra=(), node_type=tarfile.REGTYPE, license=True, node=None):
         entries = [(self.prefix + "/bin/node", self.node if node is None else node, node_type)]
@@ -85,7 +85,7 @@ class RuntimeTests(unittest.TestCase):
                  "deps/nbytes/LICENSE": b"SYNTHETIC NBYTES NOTICE\n",
                  "deps/sqlite/sqlite3.h": sqlite if sqlite is not None else
                      b"/*\n** The author disclaims copyright\n" + b"** synthetic\n" * 9 + b"DO NOT COPY API CODE\n"}
-        entries = [("node-v22.23.2/" + path, data, tarfile.REGTYPE)
+        entries = [("node-v22.23.5/" + path, data, tarfile.REGTYPE)
                    for path, data in paths.items() if path not in omit]
         return self.tar_bytes([*entries, *extra])
 
@@ -131,7 +131,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertNotIn(b"DO NOT COPY API CODE", result.source_notices)
 
     def test_source_signature_hash_and_regular_file_required_before_parsing(self):
-        source = self.root / "node-v22.23.2.tar.xz"
+        source = self.root / "node-v22.23.5.tar.xz"
         source.write_bytes(b"tampered source")
         with patch.object(vendor, "source_notices") as parse, self.assertRaisesRegex(ValueError, "Source archive digest"):
             self.verify()
@@ -285,17 +285,17 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(len({item["purl"] for item in components.values()}), 4)
         for item in components.values():
             self.assertEqual(item["nodeBinarySha256"],
-                             "3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327")
+                             "2f822d544601dfff107f57d945b649d15c5bf6302595735a6bd9cdc7ee9669bd")
             for entry in [item["sourceMetadata"], *item["buildEvidence"], *item["notices"]]:
                 self.assertRegex(entry["sha256"], r"^[0-9a-f]{64}$")
                 self.assertFalse(entry["path"].startswith("/"))
                 self.assertNotIn("..", entry["path"].split("/"))
 
     def test_source_notices_retain_nested_files_without_extracting_or_inventing_licenses(self):
-        archive = self.make_source(extra=(("node-v22.23.2/deps/v8/nested/NOTICE.txt", b"ORIGINAL nested notice", tarfile.REGTYPE),
-                                          ("node-v22.23.2/tools/test/LICENSE-extra", b"BUILD TEST ONLY", tarfile.REGTYPE)))
+        archive = self.make_source(extra=(("node-v22.23.5/deps/v8/nested/NOTICE.txt", b"ORIGINAL nested notice", tarfile.REGTYPE),
+                                          ("node-v22.23.5/tools/test/LICENSE-extra", b"BUILD TEST ONLY", tarfile.REGTYPE)))
         with patch.object(tarfile.TarFile, "extractall", side_effect=AssertionError("no extraction")):
-            notices, count = vendor.source_notices(archive, "node-v22.23.2", self.license)
+            notices, count = vendor.source_notices(archive, "node-v22.23.5", self.license)
         self.assertEqual(count, 7)
         self.assertIn(b"Includes source/build/test dependencies NOT necessarily shipped", notices)
         self.assertIn(b"ORIGINAL nested notice", notices)
@@ -305,39 +305,39 @@ class RuntimeTests(unittest.TestCase):
         for options in ({"omit": ("deps/v8/LICENSE.fdlibm",)}, {"root_license": b"different license"},
                         {"sqlite": b"different header"}):
             with self.subTest(options=options), self.assertRaises(ValueError):
-                vendor.source_notices(self.make_source(**options), "node-v22.23.2", self.license)
-        for name, kind in (("node-v22.23.2/LICENSE", tarfile.REGTYPE),
-                           ("node-v22.23.2/../NOTICE", tarfile.REGTYPE),
+                vendor.source_notices(self.make_source(**options), "node-v22.23.5", self.license)
+        for name, kind in (("node-v22.23.5/LICENSE", tarfile.REGTYPE),
+                           ("node-v22.23.5/../NOTICE", tarfile.REGTYPE),
                            ("/tmp/NOTICE", tarfile.REGTYPE),
-                           ("node-v22.23.2/deps/NOTICE", tarfile.SYMTYPE),
-                           ("node-v22.23.2/deps/NOTICE", tarfile.LNKTYPE),
-                           ("node-v22.23.2/a\nNOTICE", tarfile.REGTYPE)):
+                           ("node-v22.23.5/deps/NOTICE", tarfile.SYMTYPE),
+                           ("node-v22.23.5/deps/NOTICE", tarfile.LNKTYPE),
+                           ("node-v22.23.5/a\nNOTICE", tarfile.REGTYPE)):
             with self.subTest(name=name, kind=kind), self.assertRaises(ValueError):
-                vendor.source_notices(self.make_source(extra=((name, b"invalid", kind),)), "node-v22.23.2", self.license)
+                vendor.source_notices(self.make_source(extra=((name, b"invalid", kind),)), "node-v22.23.5", self.license)
 
     def test_source_implementations_are_not_mistaken_for_notice_documents(self):
         sources = ("copying-phase.cc", "copying-phase.h", "license.js", "copyright.pm",
                    "NOTICE.PY", "LICENSE-test.ts", "COPYRIGHT.rs")
         documents = ("LICENSE.strongtalk", "LICENSE-MIT.txt", "LICENSE_nghttp2", "COPYING",
                      "copyright.txt", "NOTICE.md", "LICENCE.rst")
-        entries = [(f"node-v22.23.2/deps/fixture/{name}", b"NOT A NOTICE " + name.encode(), tarfile.REGTYPE)
+        entries = [(f"node-v22.23.5/deps/fixture/{name}", b"NOT A NOTICE " + name.encode(), tarfile.REGTYPE)
                    for name in sources]
-        entries.extend((f"node-v22.23.2/deps/fixture/{name}", b"EXACT NOTICE " + name.encode(), tarfile.REGTYPE)
+        entries.extend((f"node-v22.23.5/deps/fixture/{name}", b"EXACT NOTICE " + name.encode(), tarfile.REGTYPE)
                        for name in documents)
-        notices, count = vendor.source_notices(self.make_source(extra=entries), "node-v22.23.2", self.license)
+        notices, count = vendor.source_notices(self.make_source(extra=entries), "node-v22.23.5", self.license)
         self.assertEqual(count, 5 + len(documents))
         self.assertNotIn(b"NOT A NOTICE", notices)
         for name in documents:
             self.assertIn(b"EXACT NOTICE " + name.encode(), notices)
 
     def test_source_notice_size_bounds_and_non_notice_links(self):
-        archive = self.make_source(extra=(("node-v22.23.2/deps/large/LICENSE", b"x" * (2 * 1024 * 1024 + 1), tarfile.REGTYPE),))
+        archive = self.make_source(extra=(("node-v22.23.5/deps/large/LICENSE", b"x" * (2 * 1024 * 1024 + 1), tarfile.REGTYPE),))
         with self.assertRaisesRegex(ValueError, "bounded regular"):
-            vendor.source_notices(archive, "node-v22.23.2", self.license)
-        archive = self.make_source(extra=(("node-v22.23.2/node_modules/executable", b"", tarfile.SYMTYPE),))
+            vendor.source_notices(archive, "node-v22.23.5", self.license)
+        archive = self.make_source(extra=(("node-v22.23.5/node_modules/executable", b"", tarfile.SYMTYPE),))
         with patch.object(vendor, "MAX_NOTICES", 1024 * 1024), self.assertRaisesRegex(ValueError, "collection exceeds"):
-            vendor.source_notices(archive, "node-v22.23.2", self.license)
-        self.assertEqual(vendor.source_notices(archive, "node-v22.23.2", self.license)[1], 5)
+            vendor.source_notices(archive, "node-v22.23.5", self.license)
+        self.assertEqual(vendor.source_notices(archive, "node-v22.23.5", self.license)[1], 5)
 
     def test_other_vendor_identity_is_not_authorized(self):
         with self.assertRaisesRegex(ValueError, "primary is not pinned"):
@@ -400,11 +400,12 @@ class RuntimeTests(unittest.TestCase):
     def test_signature_time_and_actual_primary_are_required(self):
         now = int(time.time())
         valid = (f"[GNUPG:] NEWSIG\n[GNUPG:] VALIDSIG {self.primary} 2026-09-09 "
-                 f"{now} 0 4 0 1 8 00 {self.primary}\n")
+                 f"{now} 0 4 0 22 8 00 {self.primary}\n")
         self.assertEqual(vendor.signature_valid(valid, self.policy, now, now - 60), now)
         for status in (valid.replace(f"{now} 0", f"{now + 3600} 0"),
                        valid.replace(f"{now} 0", f"{now - 30} {now - 1}"),
                        valid.replace(self.primary, "F" * 40, 1),
+                       valid.replace(" 22 8 00", " 1 8 00"),
                        valid + "[GNUPG:] REVKEYSIG\n"):
             with self.subTest(status=status), self.assertRaises(ValueError):
                 vendor.signature_valid(status, self.policy, now, now - 60)

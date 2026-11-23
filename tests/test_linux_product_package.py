@@ -231,7 +231,7 @@ console.log('PASS: actual product/QA module boundaries; no HTTP or native adapte
         self.assertEqual(product.PROFILE, "packaging/linux/production-profile.json")
         profile_bytes = json.dumps(profile(self.pem)).encode()
         source_paths = build.source_files()
-        proof = build.vendor.RuntimeProvenance("node", "22.23.2", "fixture.tar.xz", "1" * 64, 42,
+        proof = build.vendor.RuntimeProvenance("node", "22.23.5", "fixture.tar.xz", "1" * 64, 42,
             "2" * 64, "3" * 64, "4" * 64, "5" * 64,
             hashlib.sha256((ROOT / "signing/node-release-key.asc").read_bytes()).hexdigest(), "7" * 40, 1780000000,
             "synthetic-source.tar.xz", "8" * 64, 64, "9" * 64, 5,

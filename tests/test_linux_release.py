@@ -35,7 +35,7 @@ def synthetic_sbom(manifest):
                          "properties": [{"name": "fin3000:source-commit", "value": manifest["sourceCommit"]},
                                         {"name": "fin3000:build-id", "value": manifest["buildId"]}]},
             "components": [component("fin3000-printer-setup", "setup", manifest["version"], artifact="setup"),
-                           component("node", "runtime", "22.23.2"),
+                           component("node", "runtime", "22.23.5"),
                            component("synthetic-dependency", "dependency", "1.0", "library")],
             "dependencies": [{"ref": "printer", "dependsOn": ["setup", "runtime"]},
                              {"ref": "setup", "dependsOn": []},

@@ -63,7 +63,7 @@ class ProjectLicenseTests(unittest.TestCase):
         self.assertEqual(inventory["releaseGates"], "OPEN")
 
     def test_qa_stages_license_and_preserves_upstream_license_and_source(self):
-        proof = qa.vendor.RuntimeProvenance("node", "22.23.2", "fixture.tar.xz", "1" * 64, 42,
+        proof = qa.vendor.RuntimeProvenance("node", "22.23.5", "fixture.tar.xz", "1" * 64, 42,
             "2" * 64, "3" * 64, "4" * 64, "5" * 64, "6" * 64, "7" * 40, 1780000000,
             "synthetic-source.tar.xz", "8" * 64, 64, "9" * 64, 5, "a" * 64,
             1, hashlib.sha256(b"synthetic original source").hexdigest())

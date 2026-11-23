@@ -20,27 +20,15 @@ The source project is called `fin3000-printer` and is licensed under
 
 ## Availability and installation
 
-The first Linux release is being prepared. **There is no signed public
-installer or production-supported release yet.** Version `0.1.2` currently
-identifies an unreleased candidate. Do not install unsigned candidates on a
-production workstation or use them with real invoices.
+The [Fin3000 tools page](https://fin3000.com/tools/) lists the signed installers available for download and their setup instructions.
 
-The initial target is Ubuntu 24.04 and 26.04 LTS on Intel/AMD 64-bit computers,
-using GNOME/Wayland. A separate macOS installer is available for local QA on macOS 26 with Apple Silicon. The Windows version is planned.
-Other Linux distributions and desktops are not currently supported targets.
-
-When a signed release is available, use the installer and verification
-instructions supplied through Fin3000's official download channel. The setup
-application uses Ubuntu's package manager; printer setup asks for normal
-administrator authentication. End users do not need to install Node.js.
-A source checkout is not an installer. See [Building](docs/BUILDING.md) if you
-want to work on development packages.
+The Ubuntu package supports Ubuntu 24.04 and 26.04 on Intel/AMD 64-bit systems with GNOME/Wayland. The macOS package supports macOS 26 on Apple Silicon. Both include their Node.js runtime. Printer setup requests administrator authentication when required. See [Building](docs/BUILDING.md) for developer builds.
 
 ## macOS 26 on Apple Silicon
 
 Open Fin3000 Drucker in Applications after installing the package. Connect your Fin3000 account in the browser, choose a destination and authorize the per-user print queue. Choose **An Fin3000 senden (Cloud-Upload)** in the system print dialog. Open the app to view recent jobs or check an uncertain result. Remove the destination from the app before uninstalling it. The installer does not select a new default printer.
 
-On a Mac with Xcode command-line tools, run `npm ci` and `python3 -m unittest discover -s tests -p test_macos.py`. Place the official Node.js 22.23.2 binary archive `node-v22.23.2-darwin-arm64.tar.xz` and source archive `node-v22.23.2.tar.xz` in the same directory. The builder verifies both SHA-256 pins and includes the upstream notices and SmartString source in the app. Build an isolated installer with `python3 scripts/build-macos.py --profile qa --archive /path/to/node-v22.23.2-darwin-arm64.tar.xz --config /path/to/qa-config.json --qa-ca /path/to/qa-ca.crt --output /path/to/new-build`. The QA configuration uses the shared build configuration schema, loopback origins and the QA server’s public receipt key.
+On a Mac with Xcode command-line tools, run `npm ci` and `python3 -m unittest discover -s tests -p test_macos.py`. Place the official Node.js 22.23.5 binary archive `node-v22.23.5-darwin-arm64.tar.xz` and source archive `node-v22.23.5.tar.xz` in the same directory. The builder verifies both SHA-256 pins and includes the upstream notices and SmartString source in the app. Build an isolated installer with `python3 scripts/build-macos.py --profile qa --archive /path/to/node-v22.23.5-darwin-arm64.tar.xz --config /path/to/qa-config.json --qa-ca /path/to/qa-ca.crt --output /path/to/new-build`. The QA configuration uses the shared build configuration schema, loopback origins and the QA server’s public receipt key.
 
 For a production build pass `--profile production --team TEAM --app-identity APPLICATION_ID --installer-identity INSTALLER_ID` in place of the QA options. The release script verifies the app, runtime, relay, filter and installer, submits the package to Apple, staples the accepted ticket and checks Gatekeeper before publishing the final hash. Run `scripts/verify-macos-release.sh` without arguments for its inputs. Only a tested, notarized production package qualifies for the public download.
 

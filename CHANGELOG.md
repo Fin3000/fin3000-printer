@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Update the Ubuntu and macOS installers to Node.js 22.23.5 with OpenSSL 3.5.9. Verify the release with its pinned upstream Ed25519 signing key.
+
+## [0.1.2] - 2026-11-22
+
 - Add a macOS 26 Apple Silicon system printer, with per-user queue, macOS Keychain, manual history, and separate QA and notarized release packaging.
 - Include verified Node source notices and the original SmartString source in both macOS installer profiles.
 - Verify the installer certificate fingerprint on macOS 26 before notarization and after stapling.
