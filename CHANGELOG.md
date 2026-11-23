@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-23
+
 - Update the Ubuntu and macOS installers to Node.js 22.23.5 with OpenSSL 3.5.9. Verify the release with its pinned upstream Ed25519 signing key.
 
 ## [0.1.2] - 2026-11-22
